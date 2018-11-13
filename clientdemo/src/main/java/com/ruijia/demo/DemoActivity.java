@@ -10,8 +10,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import com.ruijia.qrcode.QrProgressCallback;
-
 import cn.qqtheme.framework.picker.FilePicker;
 
 /**

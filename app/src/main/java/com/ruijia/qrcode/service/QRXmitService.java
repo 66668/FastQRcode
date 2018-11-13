@@ -270,7 +270,7 @@ public class QRXmitService extends Service {
      * <p>
      * 12345：长度5：表示第几个数据片段
      * <p>
-     * 尾标记：长度4，表示这段数据是否解析正确
+     * 尾标记：长度4，表示这段数据是否解析正确 RJQR
      *
      * @param orgDatas
      */
@@ -289,7 +289,7 @@ public class QRXmitService extends Service {
                     for (int i = 0; i < size; i++) {
                         String pos = ConvertUtils.int2String(i);
                         //拼接数据-->格式：snd(发送标记)+00022(数据长度)+00001(第几个，从0开始)+数据段
-                        sendDatas.add("snd" + strSize + pos + orgDatas.get(i)); //eg 00120001xxstr
+                        sendDatas.add("snd" + strSize + pos + orgDatas.get(i) + "RJQR"); //eg 00120001xxstr
                     }
                 } catch (Exception e) {
                     isTrans(false, e.toString());
@@ -386,6 +386,9 @@ public class QRXmitService extends Service {
         handler.post(new Runnable() {
             @Override
             public void run() {
+                if (mListener == null) {
+                    return;
+                }
                 //检查注册的回调个数
                 final int N = mListener.beginBroadcast();//成对出现
                 //遍历出要用的callback
@@ -419,6 +422,9 @@ public class QRXmitService extends Service {
         handler.post(new Runnable() {
             @Override
             public void run() {
+                if (mListener == null) {
+                    return;
+                }
                 //检查注册的回调个数
                 final int N = mListener.beginBroadcast();
                 //遍历出要用的callback
@@ -452,6 +458,9 @@ public class QRXmitService extends Service {
         handler.post(new Runnable() {
             @Override
             public void run() {
+                if (mListener == null) {
+                    return;
+                }
                 //检查注册的回调个数
                 final int N = mListener.beginBroadcast();
                 //遍历出要用的callback
@@ -486,6 +495,9 @@ public class QRXmitService extends Service {
         handler.post(new Runnable() {
             @Override
             public void run() {
+                if (mListener == null) {
+                    return;
+                }
                 //检查注册的回调个数
                 final int N = mListener.beginBroadcast();
                 //遍历出要用的callback
@@ -519,6 +531,9 @@ public class QRXmitService extends Service {
         handler.post(new Runnable() {
             @Override
             public void run() {
+                if (mListener == null) {
+                    return;
+                }
                 //检查注册的回调个数
                 final int N = mListener.beginBroadcast();
                 //遍历出要用的callback
@@ -552,6 +567,9 @@ public class QRXmitService extends Service {
         handler.post(new Runnable() {
             @Override
             public void run() {
+                if (mListener == null) {
+                    return;
+                }
                 //检查注册的回调个数
                 final int N = mListener.beginBroadcast();
                 //遍历出要用的callback
@@ -585,6 +603,9 @@ public class QRXmitService extends Service {
         handler.post(new Runnable() {
             @Override
             public void run() {
+                if (mListener == null) {
+                    return;
+                }
                 //检查注册的回调个数
                 final int N = mListener.beginBroadcast();
                 //遍历出要用的callback
@@ -619,6 +640,9 @@ public class QRXmitService extends Service {
         handler.post(new Runnable() {
             @Override
             public void run() {
+                if (mListener == null) {
+                    return;
+                }
                 //检查注册的回调个数
                 final int N = mListener.beginBroadcast();
                 //遍历出要用的callback
@@ -653,13 +677,13 @@ public class QRXmitService extends Service {
             isTrans(true, "MainAct在运行");
             //接口回调
             if (listener != null) {
-                listener.onQrsend(newDatas, maps);
+                listener.onQrsend(selectPath, newDatas, maps);
             } else {
-                Log.e("SJY", "listener==null");
+                isTrans(false, "listener==null");
             }
 
         } else {
-            isTrans(false, "MainAct不在前台，需要开启");
+            isTrans(true, "MainAct不在前台，正在开启");
             startApp();
         }
     }
@@ -674,19 +698,17 @@ public class QRXmitService extends Service {
 
     /**
      * 由service调起app的act界面
-     * 由于intent传值 不能传大数据，所以使用回调方式。
+     * 由于intent传值 不能传大数据，所以使用接口回调方式。
      */
     private void startApp() {
-        handler.postDelayed(new Runnable() {
+        handler.post(new Runnable() {
             @Override
             public void run() {
                 //启动应用，参数为需要自动启动的应用的包名
                 Intent launchIntent = getPackageManager().getLaunchIntentForPackage("com.ruijia.qrcode");
-                //添加跳转值
-                launchIntent.putExtra(Constants.KEY_PATH, selectPath);
                 startActivity(launchIntent);
             }
-        }, 100);
+        });
     }
 
     /**
@@ -718,6 +740,6 @@ public class QRXmitService extends Service {
      * act的service连接完成后，通知service回调act
      */
     public void startServiceTrans() {
-        listener.onQrsend(newDatas, maps);
+        listener.onQrsend(selectPath, newDatas, maps);
     }
 }

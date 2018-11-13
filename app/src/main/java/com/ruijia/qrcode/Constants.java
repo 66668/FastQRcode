@@ -17,7 +17,7 @@ public class Constants {
     /**
      * zxing core 3.3.3 最大的传输容量2954,17长度做标记头和标记尾。2954-17=2937
      */
-    public static final int qrSize = 2937;
+    public static final int qrSize = 2935;
 
     public static final String KEY_PATH = "path";
 

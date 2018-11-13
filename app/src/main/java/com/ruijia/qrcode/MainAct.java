@@ -29,6 +29,7 @@ import com.ruijia.qrcode.utils.CheckUtils;
 import com.ruijia.qrcode.utils.CodeUtils;
 import com.ruijia.qrcode.utils.ConvertUtils;
 import com.ruijia.qrcode.utils.IOUtils;
+import com.ruijia.qrcode.utils.SPUtil;
 
 import org.w3c.dom.Text;
 
@@ -47,11 +48,13 @@ import lib.ruijia.zbar.qrodecontinue.ContinueQRCodeView;
  * 开启MainAct识别功能有两种方式，1：若MainAct没启动，使用service的serviceStartAct()方法启动 2：若MainAct已在前端显示，service使用接口回调启动
  */
 public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
-    //===================常量=====================
-    private static final long PSOTDELAY_TIME = 200;//发送间隔时间
-    private static final long PSOTDELAY_TIME2 = 300;//缺失发送间隔时间
-    //===================变量=====================
 
+    //===================变量=====================
+    private long PSOTDELAY_TIME = 150;//发送间隔时间
+    private long PSOTDELAY_TIME2 = 150;//缺失发送间隔时间
+    private String sendOver_Contnet = "QrcodeContentSendOver";//发送端 所有数据一次发送完成，发送结束标记
+    private String ReceiveOver_Content = "QrCodeContentReceiveOver";//接收端 完全收到数据，发送结束标记
+    private String endTag = "RJQR";
     //控件
     private ZBarContinueView mZBarView; //zbar
     private ImageView img_result;
@@ -66,22 +69,21 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     //===================发送端操作=====================
     List<String> sendDatas = new ArrayList<>();//发送端 数据
     List<Bitmap> sendImgs = new ArrayList<>();//发送端 数据
+    //
     List<String> sendDatas2 = new ArrayList<>();//发送端 缺失的数据；String样式
     List<Bitmap> sendImgs2 = new ArrayList<>();//缺失的数据； Bitmap样式
-
-    private List<Integer> backFlagList = new ArrayList<>();//发送端 返回缺失的标记,
     private String selectPath;
+
+    //===================发送端二次+操作（收到反馈后的操作）=====================
+    private List<Integer> backFlagList = new ArrayList<>();//发送端 返回缺失的标记,
     StringBuffer sendBuffer = new StringBuffer();  //统计结果
-    private int sendTimes = 0;//发送次数，一次发送，到下一次再发送，为一次，
-    private long send_startTime;
-    private long send_overTime;
+    private int sendCounts = 0;//发送次数统计，handler发送使用
     private boolean hasBack = false;//是否有缺失数据；
 
     //===================接收端操作=====================
     private Map<Integer, String> receveMap = new HashMap<>();//接收的数据暂时保存到map中，最终保存到receiveDatas
     private List<String> receiveDatas = new ArrayList<>();
 
-    private long receiveTime;
     private int receveSize = 0;//接收端 标记 总数据长度
 
     //service相关
@@ -95,99 +97,118 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
 //=========================================================================================
 
     /**
-     * zbar极限速度
+     * zbar识别
+     * <p>
+     * 发送端：
+     * 发送数据后，接收端使用该方法处理另一个app的反馈结果，并根据反馈结果，重新发送缺失数据，等待再次反馈。直到反馈结果为识别成功
+     * <p>
+     * 接收端：
+     * 发送端固定时间间隔发送的数据，将数据拼接并处理缺失的数据，并将缺失数据反馈给发送端。
      */
 
     //QRCodeView.Delegate
     @Override
     public void onScanQRCodeSuccess(String resultStr) {
-//        Log.d("SJY", "扫描结果为：" + resultStr);
-//        mZBarView.startSpot(); // 延迟x ms后开始识别
-
+        /**
+         *  （一）数据过滤,包括 重复结果，接收端识别完成，发送端识别完成。
+         */
         //结果相同不处理
         if (TextUtils.isEmpty(resultStr) || resultStr.equals(lastText)) {
             Log.d("SJY", "重复扫描");
             return;
         }
-
-        //接收端结束标记，进行数据统计
-        if (resultStr.contains("识别完了")) {
+        long startTime = System.currentTimeMillis();
+        //接收端，收到结束标记，处理接收端的数据
+        if (resultStr.contains(sendOver_Contnet)) {
             handOver(true);
-            Log.d("SJY", "识别完了");
+            Log.d("SJY", sendOver_Contnet);
             return;
-        } else if (resultStr.contains("rcvSuccess")) {//接收端 结束标记
+        }
+        //发送端，收到结束标记，处理缺失数据/
+        if (resultStr.contains("rcvSuccess")) {//接收端 结束标记
             handOver(false);
             return;
         }
-        //解析数据
-        //（1）解析标记
-        String flagStr = resultStr.substring(0, 11);
-        //接收端
+        /**
+         *（二）解析传输内容，文件的内容，将数据保存在map中
+         */
+        //首标记
+        String flagStr = resultStr.substring(0, 13);
+        //尾标记
+        String endFlag = resultStr.substring((resultStr.length() - 4), resultStr.length());
+        //内容
+        final String result = resultStr.substring(13, (resultStr.length() - 4));
         if (flagStr.contains("snd")) {//发送端发送的数据
-
-            String[] flagArray = flagStr.split("d");
-            //继续排除乱码
-            if (!(flagArray.length == 2)) {
-                Log.d("SJY", "数据没有长度标记");
-                return;
-            }
-            //处理标记
-            String lenStr = flagStr.substring(3, 7);
-            final String posStr = flagStr.substring(7, 11);
-            receveSize = Integer.parseInt(lenStr);//标记 数据总长度
-            final int pos = Integer.parseInt(posStr);
-            Log.d("SJY", "保存标记=" + pos);
-            //内容
-            final String result = resultStr.substring(11);
-
-            //扔到handler的异步中处理
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Log.d("SJY", "识别速度=" + (System.currentTimeMillis() - receiveTime) + "ms");
-                    receiveTime = System.currentTimeMillis();
-                    lastText = result;
-                    //震动
-                    vibrate();
-                    receveMap.put(pos, result);//map暂时保存数据
-                }
-            });
-
+            //接收端
+            RecvTerminalScan(startTime, flagStr, endFlag, result);
+        } else if (flagStr.contains("rcv")) {
             //发送端
-        } else if (flagStr.contains("rcv")) {//接收端返回的数据
-            //返回的格式：rcv00000000+1/2/3
-            String[] flagArray = flagStr.split("v");
-            //继续排除乱码
-            if (!(flagArray.length == 2)) {
-                Log.d("SJY", "数据没有长度标记");
-                return;
-            }
-            //内容
-            final String result = resultStr.substring(11);
-            String[] list = result.split("/");
-            sendDatas2 = new ArrayList<>();
-            hasBack = true;
-            for (int i = 0; i < list.length; i++) {
-                String lost = sendDatas.get(Integer.parseInt(list[i]));
-                Bitmap lostBitmap = sendImgs.get(Integer.parseInt(list[i]));
-                Log.d("SJY", "缺失位置=" + list[i]);
-                sendDatas2.add(lost);
-                sendImgs2.add(lostBitmap);
-            }
-            //发送缺失数据
-            sendLostData();
-
+            SndTerminalScan(flagStr, endFlag, result);
         } else {
-            Log.d("SJY", "数据没有任何标记");
-            return;
+            //未识别的错误数据;
         }
-
     }
 
     //QRCodeView.Delegate
     @Override
     public void onScanQRCodeOpenCameraError() {
         Log.e("SJY", "QRCodeView.Delegate--ScanQRCodeOpenCameraError()");
+    }
+
+    /**
+     * 接收端数据处理
+     * 相当于另一个手机的app,不会处理myService
+     */
+    private void RecvTerminalScan(final long startTime, String startTags, String endTags, final String recvStr) {
+        String[] flagArray = startTags.split("d");
+        //继续排除乱码
+        if ((flagArray.length != 2) || (!endTags.equals(endTag))) {
+            return;
+        }
+        //处理标记
+        String lenStr = startTags.substring(3, 8);
+        final String posStr = startTags.substring(8, 13);
+        receveSize = Integer.parseInt(lenStr);//总长度
+        final int pos = Integer.parseInt(posStr);//位置
+        //扔到handler的异步中处理
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                lastText = recvStr;
+                //震动
+                vibrate();
+                receveMap.put(pos, recvStr);//map暂时保存数据
+
+                //QRXmitService的aidl在发送端，不会再接收端处理
+            }
+        });
+    }
+
+    /**
+     * 发送端数据处理
+     */
+    private void SndTerminalScan(String headTags, String endTags, String recvStr) {
+        //返回的格式：rcv00000000+1/2/3
+//        String[] flagArray = flagStr.split("v");
+//        //继续排除乱码
+//        if (!(flagArray.length == 2)) {
+//            Log.d("SJY", "数据没有长度标记");
+//            return;
+//        }
+//        //内容
+//        final String result = resultStr.substring(11);
+//        String[] list = result.split("/");
+//        sendDatas2 = new ArrayList<>();
+//        hasBack = true;
+//        for (int i = 0; i < list.length; i++) {
+//            String lost = sendDatas.get(Integer.parseInt(list[i]));
+//            Bitmap lostBitmap = sendImgs.get(Integer.parseInt(list[i]));
+//            Log.d("SJY", "缺失位置=" + list[i]);
+//            sendDatas2.add(lost);
+//            sendImgs2.add(lostBitmap);
+//        }
+//        //发送缺失数据
+//        sendLostData();
     }
 
 //=========================================================================================
@@ -197,43 +218,50 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     /**
      * 发送二维码
      */
-    private void startShow() {
+    private void startSend() {
         Log.d("SJY", "startShow");
         //发送端时间统计
-        receiveTime = System.currentTimeMillis();
-        sendTimes = 0;
-        send_startTime = System.currentTimeMillis();
-        handler.postDelayed(sendtask, 1000);
-
-//        myService.setAidlQrCodeComplete(89, "识别完成");
-//        for (int i = 0; i < 100; i++) {
-//            myService.setAidlQrCodeSuccess(120, 100, i, i + "%");
-//        }
+        sendCounts = 0;
+        handler.postDelayed(sendtask, 1500);
     }
 
     /**
      * 发送缺失的数据（二次发送）
      */
     private void sendLostData() {
-        sendTimes = 0;
+        sendCounts = 0;
         handler.postDelayed(sendLostTask, 3000);
     }
 
+    /**
+     * 根据发送端最后一张二维码，设置接收端处理结果
+     *
+     * @param isReceive true 接收端
+     */
+    private void handOver(boolean isReceive) {
+        //统计结果
+        sendBuffer = new StringBuffer();
+        if (isReceive) {
+            handler.removeCallbacks(handOverTask);
+            handler.post(handOverTask);
+        } else {
+            //关闭bitmap
+            img_result.setImageBitmap(null);
+            img_result.setBackground(ContextCompat.getDrawable(this, R.mipmap.ic_launcher));
+        }
+    }
+
+    //--------------------------------------------------------------------------
     //初次发送
     Runnable sendtask = new Runnable() {
         @Override
         public void run() {
-            if (sendTimes < sendImgs.size()) {
-                showBitmap(sendImgs.get(sendTimes));
-                sendTimes++;
+            if (sendCounts < sendImgs.size()) {
+                img_result.setImageBitmap(sendImgs.get(sendCounts));
+                sendCounts++;
                 handler.postDelayed(this, PSOTDELAY_TIME);
             } else {
-                showBitmap("识别完了识别完了识别完了识别完了识别完了");
-                send_overTime = System.currentTimeMillis();
-                hasBack = false;
-                if (!hasBack) {
-                    Log.d("SJY", "发送端耗时：" + (send_overTime - send_startTime - 3000) + "ms--缺失返回标记--无");
-                }
+                showBitmap(sendOver_Contnet + selectPath);
             }
         }
     };
@@ -242,14 +270,13 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     Runnable sendLostTask = new Runnable() {
         @Override
         public void run() {
-            if (sendTimes < sendImgs2.size()) {
-                showBitmap(sendImgs2.get(sendTimes));
-                sendTimes++;
-                handler.postDelayed(this, PSOTDELAY_TIME2);
-            } else {
-                showBitmap("识别完了识别完了识别完了识别完了识别完了");
-                send_overTime = System.currentTimeMillis();
-            }
+//            if (sendTimes < sendImgs2.size()) {
+//                showBitmap(sendImgs2.get(sendTimes));
+//                sendTimes++;
+//                handler.postDelayed(this, PSOTDELAY_TIME2);
+//            } else {
+//                showBitmap("识别完了识别完了识别完了识别完了识别完了");
+//            }
         }
     };
 
@@ -295,43 +322,29 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             }
         }
     };
+//--------------------------------------------------------------------------
+
 
     /**
-     * 根据发送端最后一张二维码，设置接收端处理结果
-     *
-     * @param isReceive true 接收端
+     * 初始化发送端数据
      */
-    private void handOver(boolean isReceive) {
-        //统计结果
-        sendBuffer = new StringBuffer();
-        if (isReceive) {
-            handler.removeCallbacks(handOverTask);
-            handler.post(handOverTask);
-        } else {
-            //关闭bitmap
-            img_result.setImageBitmap(null);
-            img_result.setBackground(ContextCompat.getDrawable(this, R.mipmap.ic_launcher));
-
-        }
-    }
-
-    /**
-     * 重新初始化流程控制参数
-     */
-    private void initParams() {
-        receiveTime = 0;
-        receveSize = 0;
-        sendTimes = 0;
-        receiveDatas = new ArrayList<>();
+    private void initSendParams() {
+        sendCounts = 0;
         sendDatas = new ArrayList<>();
+        sendDatas2 = new ArrayList<>();
         sendImgs = new ArrayList<>();
         sendImgs2 = new ArrayList<>();
-        backFlagList = new ArrayList<>();
-        receveMap = new HashMap<>();
         sendBuffer = new StringBuffer();
         //
         img_result.setImageBitmap(null);
         img_result.setBackground(ContextCompat.getDrawable(this, R.mipmap.ic_launcher));
+    }
+
+    /**
+     * 初始化 接收端数据
+     */
+    private void initRecvParams() {
+
     }
 
 
@@ -344,21 +357,6 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         setContentView(R.layout.act_main);
         initView();
         initService();
-        initIntent();
-    }
-
-    /**
-     * app可能由service调起，service会传值
-     */
-    private void initIntent() {
-        Log.d("SJY", "act--onCreate");
-        if (getIntent() == null) {
-            return;
-        } else {
-            Intent intent = getIntent();
-            selectPath = null;
-            selectPath = intent.getStringExtra("path");
-        }
     }
 
 
@@ -366,25 +364,22 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
      * 初始化控件
      */
     private void initView() {
+
         //zbar
         mZBarView = (ZBarContinueView) findViewById(R.id.zbarview);
         mZBarView.setDelegate(this);
         //
         img_result = (ImageView) findViewById(R.id.barcodePreview);
-        img_result.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                //点击图片重新唤醒
-                if (mZBarView != null) {
-                    mZBarView.startSpot(); // 显示扫描框，并且延迟0.1秒后开始识别
-                }
-                initParams();
-            }
-        });
 
         //设置宽高
         size = 400;
         handler = new Handler();
+        //获取缓存的时间间隔
+        PSOTDELAY_TIME = SPUtil.getInt(Constants.TIME_INTERVAL, 150);
+        PSOTDELAY_TIME2 = PSOTDELAY_TIME;
+        initSendParams();
+        initRecvParams();
+        //开启扫描
         startPreview();
     }
 
@@ -490,19 +485,20 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
      */
     private OnServiceAndActListener myListener = new OnServiceAndActListener() {
         @Override
-        public void onQrsend(List<String> newData, List<Bitmap> maps) {
+        public void onQrsend(String path, List<String> newData, List<Bitmap> maps) {
+            //清空发送端数据，保证本次数据不受上一次影响
+            initSendParams();
             //赋值
+            selectPath = path;
             sendDatas = newData;
             sendImgs = maps;
-            Log.d("SJY", "MainAct--OnServiceAndActListener回调");
             //
             if (sendDatas != null && sendDatas.size() > 0 &&
-                    sendImgs != null && sendImgs.size() > 0) {
-                Log.d("SJY", "发送数据");
+                    sendImgs != null && sendImgs.size() > 0 && (!TextUtils.isEmpty(selectPath))) {
                 //发送数据
-                startShow();
+                startSend();
             } else {
-                Log.d("SJY", "act--OnServiceAndActListener--data=null");
+                myService.isTrans(false, "myListener获取到空数据，无法发送");
             }
         }
     };
@@ -529,21 +525,10 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                     img_result.setImageBitmap(bitmap);
 
                 } else {
-                    Log.e("SJY", "生成英文二维码失败");
+                    Log.e("SJY", "生成二维码失败");
                 }
             }
         }.execute();
-    }
-
-    /**
-     * 创建并显示
-     *
-     * @return
-     */
-    private void showBitmap(final Bitmap bitmap) {
-        if (bitmap != null) {
-            img_result.setImageBitmap(bitmap);
-        }
     }
 
     /**
