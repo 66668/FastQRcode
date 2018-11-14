@@ -50,11 +50,7 @@ import lib.ruijia.zbar.qrodecontinue.ContinueQRCodeView;
 public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
 
     //===================变量=====================
-    private long PSOTDELAY_TIME = 150;//发送间隔时间
-    private long PSOTDELAY_TIME2 = 150;//缺失发送间隔时间
-    private String sendOver_Contnet = "QrcodeContentSendOver";//发送端 所有数据一次发送完成，发送结束标记
-    private String ReceiveOver_Content = "QrCodeContentReceiveOver";//接收端 完全收到数据，发送结束标记
-    private String endTag = "RJQR";
+
     //控件
     private ZBarContinueView mZBarView; //zbar
     private ImageView img_result;
@@ -64,7 +60,14 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     //生成二维码使用
     private int size = 400;//200就够了，再大也没用
     private Handler handler;
-    private String lastText;
+    //通用标记
+    private long PSOTDELAY_TIME = 150;//发送间隔时间
+    private long PSOTDELAY_TIME2 = 150;//缺失发送间隔时间
+    private String sendOver_Contnet = "QrcodeContentSendOver";//发送端 所有数据一次发送完成，发送结束标记
+    private String ReceiveOver_Content = "QrCodeContentReceiveOver";//接收端 完全收到数据，发送结束标记
+    private String endTag = "RJQR";
+    private String lastText;//
+    private String lastRecvOver = "";//接收端标记
 
     //===================发送端操作=====================
     List<String> sendDatas = new ArrayList<>();//发送端 数据
@@ -72,7 +75,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     //
     List<String> sendDatas2 = new ArrayList<>();//发送端 缺失的数据；String样式
     List<Bitmap> sendImgs2 = new ArrayList<>();//缺失的数据； Bitmap样式
-    private String selectPath;
+    private String sendFlePath;//发送端 文件路径
 
     //===================发送端二次+操作（收到反馈后的操作）=====================
     private List<Integer> backFlagList = new ArrayList<>();//发送端 返回缺失的标记,
@@ -83,7 +86,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     //===================接收端操作=====================
     private Map<Integer, String> receveMap = new HashMap<>();//接收的数据暂时保存到map中，最终保存到receiveDatas
     private List<String> receiveDatas = new ArrayList<>();
-
+    private String recvFlePath;//接收端 文件路径
     private int receveSize = 0;//接收端 标记 总数据长度
 
     //service相关
@@ -92,9 +95,9 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     QRXmitService.QrAIDLServiceBinder myBinder = null;
 
 
-//=========================================================================================
-//=====================================识别结果==========================================
-//=========================================================================================
+//=================================================================================================================
+//=====================================识别结果,细分 接收端处理和发送端处理============================================
+//=================================================================================================================
 
     /**
      * zbar识别
@@ -120,8 +123,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         long startTime = System.currentTimeMillis();
         //接收端，收到结束标记，处理接收端的数据
         if (resultStr.contains(sendOver_Contnet)) {
-            handOver(true);
-            Log.d("SJY", sendOver_Contnet);
+            RecvTerminalOver(resultStr);
             return;
         }
         //发送端，收到结束标记，处理缺失数据/
@@ -154,6 +156,9 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     public void onScanQRCodeOpenCameraError() {
         Log.e("SJY", "QRCodeView.Delegate--ScanQRCodeOpenCameraError()");
     }
+//========================================================================================
+//=====================================接收端处理==========================================
+//========================================================================================
 
     /**
      * 接收端数据处理
@@ -183,6 +188,78 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             }
         });
     }
+
+    /**
+     * 接收端 识别结束 处理
+     * 数据拼接类型：QrcodeContentSendOver+文件路径
+     */
+    private void RecvTerminalOver(String resultStr) {
+        //处理标记
+        if (resultStr.equals(lastRecvOver)) {
+            //再一次过滤，保证拿到结束标记 只处理一次
+            return;
+        }
+        lastRecvOver = resultStr;
+        recvFlePath = resultStr.substring(sendOver_Contnet.length(), resultStr.length());
+        handler.removeCallbacks(sendTerminalOverTask);
+        handler.post(sendTerminalOverTask);
+    }
+
+    /**
+     * 接收端 处理识别结束标记/异步
+     */
+    Runnable sendTerminalOverTask = new Runnable() {
+        @Override
+        public void run() {
+            //计算缺失的部分
+            backFlagList = new ArrayList<>();
+            for (int i = 0; i < receveSize; i++) {
+                if (receveMap.get(i) == null || TextUtils.isEmpty(receveMap.get(i))) {
+                    Log.d("SJY", "缺失=" + i);
+                    backFlagList.add(i);
+                }
+            }
+            if (backFlagList.size() > 0) {//有缺失数据
+                //拼接数据,告诉发送端发送缺失数据
+                Log.d("SJY", "接收端--数据缺失:");
+                //
+                int count = 0;
+                for (int i = 0; i < backFlagList.size(); i++) {
+                    sendBuffer.append(backFlagList.get(i) + "").append("/");
+                    count++;
+                }
+                sendBuffer.deleteCharAt(sendBuffer.toString().length() - 1);
+                //拼接数据
+                String backStr = null;
+                try {
+                    backStr = "rcv" + ConvertUtils.int2String(receveSize) + ConvertUtils.int2String(count) + sendBuffer.toString();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                //TODO 数据返回通知
+                RecvTerminalBackSend();
+                showBitmap(backStr);
+
+            } else {//没有缺失数据
+                Log.d("SJY", "接收端--数据接收完成");
+                showBitmap("rcvSuccess");
+                //保存图片
+                saveFile();
+            }
+        }
+    };
+
+    /**
+     * 接收端发送反馈二维码数据
+     */
+    private void RecvTerminalBackSend() {
+        //需要清除 lastRecvOver标记，否则，二次+接收端收不到结束处理标记
+        lastRecvOver = "";
+        //
+
+    }
+
+//=====================================发送端处理==========================================
 
     /**
      * 发送端数据处理
@@ -242,8 +319,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         //统计结果
         sendBuffer = new StringBuffer();
         if (isReceive) {
-            handler.removeCallbacks(handOverTask);
-            handler.post(handOverTask);
+
         } else {
             //关闭bitmap
             img_result.setImageBitmap(null);
@@ -251,8 +327,8 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         }
     }
 
-    //--------------------------------------------------------------------------
-    //初次发送
+    //-------------------------------------异步操作-------------------------------------
+    //发送端 初次发送
     Runnable sendtask = new Runnable() {
         @Override
         public void run() {
@@ -261,7 +337,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                 sendCounts++;
                 handler.postDelayed(this, PSOTDELAY_TIME);
             } else {
-                showBitmap(sendOver_Contnet + selectPath);
+                showBitmap(sendOver_Contnet + sendFlePath);
             }
         }
     };
@@ -280,48 +356,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         }
     };
 
-    /**
-     * 根据发送端最后一张二维码，设置接收端处理结果
-     */
-    Runnable handOverTask = new Runnable() {
-        @Override
-        public void run() {
-            //计算缺失的部分
-            backFlagList = new ArrayList<>();
-            for (int i = 0; i < receveSize; i++) {
-                if (receveMap.get(i) == null || TextUtils.isEmpty(receveMap.get(i))) {
-                    Log.d("SJY", "缺失=" + i);
-                    backFlagList.add(i);
-                }
-            }
-            if (backFlagList.size() > 0) {//有缺失数据
-                //拼接数据,告诉发送端发送缺失数据
-                Log.d("SJY", "接收端--数据缺失:");
-                //
-                int count = 0;
-                for (int i = 0; i < backFlagList.size(); i++) {
-                    sendBuffer.append(backFlagList.get(i) + "").append("/");
-                    count++;
-                }
-                sendBuffer.deleteCharAt(sendBuffer.toString().length() - 1);
-                //拼接数据
-                String backStr = null;
-                try {
-                    backStr = "rcv" + ConvertUtils.int2String(receveSize) + ConvertUtils.int2String(count) + sendBuffer.toString();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                //数据返回通知
-                showBitmap(backStr);
 
-            } else {//没有缺失数据
-                Log.d("SJY", "接收端--数据接收完成");
-                showBitmap("rcvSuccess");
-                //保存图片
-                saveFile();
-            }
-        }
-    };
 //--------------------------------------------------------------------------
 
 
@@ -453,7 +488,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         super.onDestroy();
 
     }
-    //=====================================act与service相关==========================================
+    //=====================================发送端 act与service相关==========================================
 
     /**
      * service连接
@@ -489,12 +524,12 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             //清空发送端数据，保证本次数据不受上一次影响
             initSendParams();
             //赋值
-            selectPath = path;
+            sendFlePath = path;
             sendDatas = newData;
             sendImgs = maps;
             //
             if (sendDatas != null && sendDatas.size() > 0 &&
-                    sendImgs != null && sendImgs.size() > 0 && (!TextUtils.isEmpty(selectPath))) {
+                    sendImgs != null && sendImgs.size() > 0 && (!TextUtils.isEmpty(sendFlePath))) {
                 //发送数据
                 startSend();
             } else {
