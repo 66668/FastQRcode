@@ -129,11 +129,9 @@ public class IOUtils {
         for (int i = 0; i < size; i++) {
             if (i == size - 1) {
                 String item = data.substring(len * i, len * i + last);
-                Log.d("SJY", i + "--数据长度=" + item.length());
                 orgDatas.add(item);
             } else {
                 String item = data.substring(len * i, len * (i + 1));
-                Log.d("SJY", i + "--数据长度=" + item.length());
                 orgDatas.add(item);
             }
 

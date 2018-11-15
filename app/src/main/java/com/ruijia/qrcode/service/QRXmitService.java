@@ -15,7 +15,6 @@ import com.ruijia.qrcode.QrAIDLInterface;
 import com.ruijia.qrcode.QrApplication;
 import com.ruijia.qrcode.QrProgressCallback;
 import com.ruijia.qrcode.listener.OnServiceAndActListener;
-import com.ruijia.qrcode.utils.CacheUtils;
 import com.ruijia.qrcode.utils.CheckUtils;
 import com.ruijia.qrcode.utils.CodeUtils;
 import com.ruijia.qrcode.utils.ConvertUtils;
@@ -23,7 +22,6 @@ import com.ruijia.qrcode.utils.IOUtils;
 import com.ruijia.qrcode.utils.SPUtil;
 
 import java.io.File;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -45,6 +43,7 @@ public class QRXmitService extends Service {
     private OnServiceAndActListener listener;//
     private List<String> newDatas = new ArrayList<>();
     private List<Bitmap> maps = new ArrayList<>();
+    private int size = 0;//当前文件的list长度
 
     /**
      * 客户端开启连接后，自动执行
@@ -247,10 +246,16 @@ public class QRXmitService extends Service {
                 //拿到原始list,转成bitmap
                 if (list == null || list.size() <= 0) {
                     //回调客户端
-                    isTrans(false, "createArray--原始数据长度超过指定长度！");
+                    isTrans(false, "createArray--原始数据长度超过qrcode指定长度！");
                     return;
                 } else {
-                    createNewArray(list);
+                    //判断数据长度是否超过处理能力
+                    if (list.size() > 9999999) {
+                        isTrans(false, "文件过大，超过链路层最大处理能力");
+                        return;
+                    } else {
+                        createNewArray(list);
+                    }
                 }
             }
         }.execute();
@@ -260,15 +265,13 @@ public class QRXmitService extends Service {
     /**
      * (3) 原始List转有标记的List数据
      * <p>
-     * 说明：String数据段头标记：snd1234512345,长度13;尾标记：RJQR,长度4
+     * 说明：String数据段头标记：snd1234567,长度10;尾标记：RJQR,长度4
      * <p>
      * 头标记：
      * <p>
      * snd：长度3：表示发送 长度3
      * <p>
-     * 12345:长度5：表示list总长度
-     * <p>
-     * 12345：长度5：表示第几个数据片段
+     * 12345:长度7：表示list第几个片段
      * <p>
      * 尾标记：长度4，表示这段数据是否解析正确 RJQR
      *
@@ -283,13 +286,12 @@ public class QRXmitService extends Service {
                 long startTime = System.currentTimeMillis();
                 try {
                     //添加标记，
-                    // 前5位是size标记，后5位是第几个标记
+                    // 7位的位置标记
                     int size = orgDatas.size();
-                    String strSize = ConvertUtils.int2String(size);//不会处理大于10000的size
                     for (int i = 0; i < size; i++) {
                         String pos = ConvertUtils.int2String(i);
-                        //拼接数据-->格式：snd(发送标记)+00022(数据长度)+00001(第几个，从0开始)+数据段
-                        sendDatas.add("snd" + strSize + pos + orgDatas.get(i) + "RJQR"); //eg 00120001xxstr
+                        //拼接数据-->格式：snd(发送标记)+1234567(第几个，从0开始)+数据段
+                        sendDatas.add("snd" + pos + orgDatas.get(i) + "RJQR");
                     }
                 } catch (Exception e) {
                     isTrans(false, e.toString());
@@ -318,8 +320,9 @@ public class QRXmitService extends Service {
                      * 本次用方式2测试。
                      */
                     newDatas = list;
+                    size = newDatas.size();
                     //新数据转qrbitmap
-                    createQrBitmap(list);
+                    createQrBitmap();
                 }
 
             }
@@ -331,22 +334,18 @@ public class QRXmitService extends Service {
      *
      * <p>
      */
-    private void createQrBitmap(final List<String> sendDatas) {
+    private void createQrBitmap() {
         new AsyncTask<Void, Void, List<Bitmap>>() {
 
             @Override
             protected List<Bitmap> doInBackground(Void... voids) {
-                //保存新数据
-                CacheUtils.getInstance().put(Constants.KEY_STRLIST, (Serializable) sendDatas);
                 //
                 List<Bitmap> sendImgs = new ArrayList<>();
                 long startTime = System.currentTimeMillis();
-
                 //sendDatas 转qrbitmap
-                int size = sendDatas.size();
                 for (int i = 0; i < size; i++) {
                     long start = System.currentTimeMillis();
-                    Bitmap bitmap = CodeUtils.createByMultiFormatWriter(sendDatas.get(i), 400);
+                    Bitmap bitmap = CodeUtils.createByMultiFormatWriter(newDatas.get(i), 400);
                     sendImgs.add(bitmap);
                     //回调客户端
                     long end = System.currentTimeMillis() - start;
@@ -356,8 +355,6 @@ public class QRXmitService extends Service {
                 //回调客户端
                 long time = System.currentTimeMillis() - startTime;
                 createQrImgTime(time, "createQrBitmap:list--->qrbitmap");
-                //保存
-                CacheUtils.getInstance().put(Constants.KEY_BITMAPLIST, (Serializable) sendImgs);
                 return sendImgs;
             }
 
