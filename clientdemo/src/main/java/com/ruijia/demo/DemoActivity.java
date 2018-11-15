@@ -2,7 +2,9 @@ package com.ruijia.demo;
 
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.os.RemoteException;
+import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
@@ -22,14 +24,37 @@ public class DemoActivity extends BaseActivity implements View.OnClickListener {
     private Button btn_select, btn_QRCtrl, btn_QRRecv, btn_QRSend, btn_bind, btn_unbind, btn_time_sure, btn_maxSize_sure;
     private TextView tv_path;
 
+    //
+    Handler handler = new Handler();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initMyView();
+        initDemo();
+    }
+
+    Runnable run = new Runnable() {
+        @Override
+        public void run() {
+            long now = SystemClock.uptimeMillis();
+
+            long next = now + 1000-now%1000;
+            Log.d("SJY", "SystemClock.uptimeMillis()=" + SystemClock.uptimeMillis() + "--System.currentTimeMillis()=" + System.currentTimeMillis() + "--next" + next);
+
+            handler.postAtTime(this, next);
+
+        }
+    };
+
+    private void initDemo() {
+//        handler.post(run);
+        handler.postAtTime(run, SystemClock.uptimeMillis() + 1000);
     }
 
     private void initMyView() {
+
         et_timeInteral = findViewById(R.id.et_timeInteral);
         et_maxSize = findViewById(R.id.et_maxSize);
         tv_path = findViewById(R.id.tv_path);
