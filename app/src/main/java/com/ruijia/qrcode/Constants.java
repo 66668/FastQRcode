@@ -19,10 +19,9 @@ public class Constants {
      */
     public static final int qrSize = 2938;
 
-    public static final String KEY_PATH = "path";
-
-    public static final String KEY_STRLIST = "strList";
-
-    public static final String KEY_BITMAPLIST = "bitmapList";
+    /**
+     * 识别过程，最大20次来回传图没有结果，强制结束
+     */
+    public static final int MAX_TIMES = 20;
 
 }

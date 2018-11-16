@@ -52,21 +52,18 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private String receiveOver_Content = "QrCodeContentReceiveOver";//接收端 完全收到数据，发送结束标记
     private String endTag = "RJQR";
     private String lastText;//
-    private String lastRecvOver = "";//接收端标记
+    private String lastRecvOver = "";//接收端使用的标记
+    private String lastSendOver = "";//发送端使用的标记
     private boolean isFirst = true;//是否走onCreate生命周期
 
     //===================发送端操作=====================
     private List<String> sendDatas = new ArrayList<>();//发送端 数据
     private List<Bitmap> sendImgs = new ArrayList<>();//发送端 数据
-    private List<String> sendDatas2 = new ArrayList<>();//发送端 缺失的数据；String样式
-    private List<Bitmap> sendImgs2 = new ArrayList<>();//缺失的数据； Bitmap样式
+    private List<Integer> sendBackList = new ArrayList<>();//发送端 返回缺失数据
+    private List<Bitmap> sendImgsMore = new ArrayList<>();//缺失的数据； Bitmap样式
     private String sendFlePath;//发送端 文件路径
     private int sendSize = 0;//发送端 文件路径
     private int sendCounts = 0;//发送次数统计，handler发送使用
-    //===================发送端二次+操作（收到反馈后的操作）=====================
-
-
-    private boolean hasBack = false;//是否有缺失数据；
 
     //===================接收端操作=====================
     private Map<Integer, String> receveContentMap = new HashMap<>();//接收的数据暂时保存到map中，最终保存到receiveDatas
@@ -120,7 +117,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
 
         //发送端，收到结束标记，处理缺失数据/
         if (resultStr.contains(receiveOver_Content)) {//接收端 结束标记
-            //TODO
+            senTerminalOver(resultStr);
             return;
         }
         /**
@@ -148,12 +145,13 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     public void onScanQRCodeOpenCameraError() {
         Log.e("SJY", "QRCodeView.Delegate--ScanQRCodeOpenCameraError()");
     }
+
 //========================================================================================
 //=====================================接收端处理==========================================
 //========================================================================================
 
     /**
-     * 接收端数据处理
+     * 接收端数据处理（实时扫描结果）
      * 相当于另一个手机的app,不会处理myService
      */
     private void RecvTerminalScan(final long startTime, String startTags, String endTags, final String recvStr) {
@@ -178,7 +176,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     }
 
     /**
-     * 接收端 识别结束 处理
+     * 接收端 识别结束处理（实时扫描结果）
      * 数据拼接类型：QrcodeContentSendOver+文件路径+7位的文件大小
      */
     private void RecvTerminalOver(String resultStr) {
@@ -223,30 +221,29 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                 //
                 List<String> orgList = new ArrayList<>();
                 for (int i = 0; i < feedBackFlagList.size(); i++) {
+                    //拼接
+                    feedBackBuffer.append(feedBackFlagList.get(i) + "").append("/");
                     if (feedBackBuffer.length() > 2000) {
                         //添加到list中
                         feedBackBuffer.deleteCharAt(feedBackBuffer.toString().length() - 1);
                         orgList.add(feedBackBuffer.toString());
                         //重新赋值
                         feedBackBuffer = new StringBuffer();
-                    } else {
-                        //拼接
-                        feedBackBuffer.append(feedBackFlagList.get(i) + "").append("/");
                     }
                 }
                 feedBackBuffer.deleteCharAt(feedBackBuffer.toString().length() - 1);
                 orgList.add(feedBackBuffer.toString());
 
                 //拼接数据 rcv1234567+内容+RJQR
-                String backStr = null;
-                for (int i = 0; i < orgList.size(); i++) {
-                    String pos = null;
-                    try {
-                        pos = ConvertUtils.int2String(i);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    feedBackDatas.add("rcv" + pos + orgList.get(i) + "RJQR");
+                int backsize = orgList.size();
+                String backSizeStr = null;
+                try {
+                    backSizeStr = ConvertUtils.int2String(backsize);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                for (int i = 0; i < backsize; i++) {
+                    feedBackDatas.add("rcv" + backSizeStr + orgList.get(i) + endTag);
                 }
 
                 //生成bitmap
@@ -258,6 +255,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                 recvTerminalBackSend();
 
             } else {//没有缺失数据
+                //TODO
                 Log.d("SJY", "接收端--数据接收完成");
                 showBitmap("rcvSuccess");
                 //保存图片
@@ -294,6 +292,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     };
 
     /**
+     * TODO
      * 接收端 保存文件
      */
     private void saveFile() {
@@ -302,18 +301,13 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             protected String doInBackground(Void... voids) {
                 //拼接数据
                 receiveContentDatas = new ArrayList<>();
+                String data = new String();
+                //提取map数据
                 for (int i = 0; i < receveSize; i++) {
                     String str = receveContentMap.get(i);
-                    Log.d("SJY", i + "---数据长度=" + str.length());
+                    data += receveContentMap.get(i);
                     receiveContentDatas.add(str);
                 }
-                //
-                String data = new String();
-                for (int i = 0; i < receiveContentDatas.size(); i++) {
-                    data += receiveContentDatas.get(i);
-                }
-                Log.e("SJY", "》》》》》》》》》》接收端总长度《《《《《《《《《《《《=" + data.length());
-
                 return IOUtils.base64ToFile(data, "zip");
             }
 
@@ -330,7 +324,81 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     }
 
 
+//=======================================================================================
 //=====================================发送端处理==========================================
+//=======================================================================================
+
+    /**
+     * 发送端 接收数据处理（实时扫描结果）
+     * 数据格式：rcv1234567+内容+RJQR
+     */
+    private void SndTerminalScan(String headTags, final String endTags, final String recvStr) {
+
+        String[] flagArray = headTags.split("v");
+        //继续排除乱码
+        if ((flagArray.length != 2) || (!endTags.equals(endTag))) {
+            return;
+        }
+        //处理片段位置标记
+        String posStr = headTags.substring(3, 10);
+        final int pos = Integer.parseInt(posStr);//位置 "0001234"-->1234
+        //扔到handler的异步中处理
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                lastText = endTags;
+                vibrate();  //震动
+                //数据转成list,list保存位置信息
+                String[] strDatas = recvStr.split("/");
+                //数据保存在list中
+                for (int i = 0; i < strDatas.length; i++) {
+                    sendBackList.add(Integer.parseInt(strDatas[i]));
+                }
+            }
+        });
+    }
+
+    /**
+     * 发送端 结束标记处理（实时扫描结果）
+     * 数据格式：QrCodeContentReceiveOver
+     *
+     * @param resultStr
+     */
+    private void senTerminalOver(String resultStr) {
+
+        //处理标记
+        if (resultStr.equals(lastSendOver)) {
+            //再一次过滤，保证拿到结束标记 只处理一次
+            return;
+        }
+        //注意该标记需要清除，否则容易出问题，清除时间在发送二维码处
+        lastSendOver = resultStr;
+        //查找缺失数据并拼接
+        new AsyncTask<Void, Void, List<Bitmap>>() {
+            @Override
+            protected List<Bitmap> doInBackground(Void... voids) {
+                List<Bitmap> maps = new ArrayList<>();
+                //利用位置信息，取bitmap
+                for (int i = 0; i < sendBackList.size(); i++) {
+                    for (int j = 0; j < sendImgs.size(); j++) {
+                        if (sendBackList.get(i) == j) {
+                            maps.add(sendImgs.get(j));
+                        }
+                    }
+                }
+                return maps;
+            }
+
+            @Override
+            protected void onPostExecute(List<Bitmap> bitmaps) {
+                super.onPostExecute(bitmaps);
+                sendImgsMore = bitmaps;
+                //发送二维码
+                startSendMore();
+            }
+        }.execute();
+
+    }
 
     /**
      * 发送二维码
@@ -344,7 +412,15 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         } else {
             handler.post(firstSendTask);
         }
+    }
 
+    /**
+     * 发送二维码（二次+发送）
+     */
+    private void startSendMore() {
+        sendCounts = 0;
+        handler.removeCallbacks(moreSendTask);
+        handler.post(moreSendTask);
     }
 
     /**
@@ -370,48 +446,26 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         }
     };
 
-    /**
-     * 发送端数据处理
-     */
-    private void SndTerminalScan(String headTags, String endTags, String recvStr) {
-        //返回的格式：rcv00000000+1/2/3
-//        String[] flagArray = flagStr.split("v");
-//        //继续排除乱码
-//        if (!(flagArray.length == 2)) {
-//            Log.d("SJY", "数据没有长度标记");
-//            return;
-//        }
-//        //内容
-//        final String result = resultStr.substring(11);
-//        String[] list = result.split("/");
-//        sendDatas2 = new ArrayList<>();
-//        hasBack = true;
-//        for (int i = 0; i < list.length; i++) {
-//            String lost = sendDatas.get(Integer.parseInt(list[i]));
-//            Bitmap lostBitmap = sendImgs.get(Integer.parseInt(list[i]));
-//            Log.d("SJY", "缺失位置=" + list[i]);
-//            sendDatas2.add(lost);
-//            sendImgs2.add(lostBitmap);
-//        }
-//        //发送缺失数据
-//        sendLostData();
-    }
-
-
-    //-------------------------------------异步操作-------------------------------------
-
 
     //发送端二次+ 发送缺失数据
-    Runnable sendLostTask = new Runnable() {
+    Runnable moreSendTask = new Runnable() {
         @Override
         public void run() {
-//            if (sendTimes < sendImgs2.size()) {
-//                showBitmap(sendImgs2.get(sendTimes));
-//                sendTimes++;
-//                handler.postDelayed(this, PSOTDELAY_TIME2);
-//            } else {
-//                showBitmap("识别完了识别完了识别完了识别完了识别完了");
-//            }
+
+            if (sendImgsMore.size() > 0 && sendCounts < sendImgsMore.size()) {
+                img_result.setImageBitmap(sendImgsMore.get(sendCounts));
+                sendCounts++;
+                handler.postDelayed(this, PSOTDELAY_TIME_SEND);
+            } else {
+                //发送结束标记，结束标记为：QrcodeContentSendOver+文件路径+文件大小（7位数）
+                try {
+                    String sizeStr = ConvertUtils.int2String(sendSize);
+                    showBitmap(sendOver_Contnet + sendFlePath + sizeStr);
+                } catch (Exception e) {
+                    //已处理
+                    e.printStackTrace();
+                }
+            }
         }
     };
 
@@ -425,9 +479,8 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private void initSendParams() {
         sendCounts = 0;
         sendDatas = new ArrayList<>();
-        sendDatas2 = new ArrayList<>();
+        sendImgsMore = new ArrayList<>();
         sendImgs = new ArrayList<>();
-        sendImgs2 = new ArrayList<>();
         //
         img_result.setImageBitmap(null);
         img_result.setBackground(ContextCompat.getDrawable(this, R.mipmap.ic_launcher));
