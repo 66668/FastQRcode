@@ -32,26 +32,9 @@ public class DemoActivity extends BaseActivity implements View.OnClickListener {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initMyView();
-        initDemo();
     }
 
-    Runnable run = new Runnable() {
-        @Override
-        public void run() {
-            long now = SystemClock.uptimeMillis();
 
-            long next = now + 1000-now%1000;
-            Log.d("SJY", "SystemClock.uptimeMillis()=" + SystemClock.uptimeMillis() + "--System.currentTimeMillis()=" + System.currentTimeMillis() + "--next" + next);
-
-            handler.postAtTime(this, next);
-
-        }
-    };
-
-    private void initDemo() {
-//        handler.post(run);
-        handler.postAtTime(run, SystemClock.uptimeMillis() + 1000);
-    }
 
     private void initMyView() {
 

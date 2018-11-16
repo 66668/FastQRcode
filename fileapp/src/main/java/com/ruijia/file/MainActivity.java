@@ -6,6 +6,7 @@ import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.widget.TextView;
 
@@ -65,7 +66,12 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onQrRecv(String selectPath) {
             Log.d("SJY", "MianAct获取路径 file=" + selectPath);
-            tv_path.setText("获取路径 file=" + selectPath);
+            if (TextUtils.isEmpty(selectPath)) {
+                tv_path.setText("已获取路径 ,但格式不正确无法转成文件");
+            } else {
+                tv_path.setText("获取路径 file=" + selectPath);
+            }
+
             //拿到路径后，测试B软件实现其他业务需要，需要开发方自己实现自己的业务即可。
         }
     };

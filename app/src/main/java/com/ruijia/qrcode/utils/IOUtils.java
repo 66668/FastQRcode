@@ -103,6 +103,40 @@ public class IOUtils {
         }
     }
 
+    /**
+     * String-->File
+     * base64 字符串转任何file
+     *
+     * @return
+     */
+    public static String StringToFile(String dataStr, String filepath) {
+
+        File file = new File(filepath);
+
+        OutputStream os = null;
+        byte[] data = Base64.decode(dataStr, Base64.DEFAULT);
+//        if (data[0] < 0) {
+//            Log.e("SJY", "String2PngFile数据需要调整base64");
+//            for (int i = 0; i < data.length; i++) {
+//                if (data[i] < 0) {
+//                    //调整异常数据
+//                    data[i] += 256;
+//                }
+//            }
+//        }
+        try {
+            os = new FileOutputStream(file);
+            os.write(data);
+            os.flush();
+            os.close();
+            return filepath;
+        } catch (Exception e) {
+            e.printStackTrace();
+            Log.e("SJY", "base64ToFile异常：" + e.toString());
+            return null;
+        }
+    }
+
 
     /**
      * File-->String

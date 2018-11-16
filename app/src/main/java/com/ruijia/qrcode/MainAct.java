@@ -50,6 +50,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private long PSOTDELAY_TIME_BACK = 150;//默认 缺失发送间隔时间
     private String sendOver_Contnet = "QrcodeContentSendOver";//发送端 所有数据一次发送完成，发送结束标记
     private String receiveOver_Content = "QrCodeContentReceiveOver";//接收端 完全收到数据，发送结束标记
+    private String SUCCESS = "Success";//识别成功结束标记，和sendOver_Contnet和receiveOver_Content拼接使用
     private String endTag = "RJQR";
     private String lastText;//
     private String lastRecvOver = "";//接收端使用的标记
@@ -77,9 +78,9 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private int recvCounts = 0;//发送次数统计，handler发送使用
 
     //service相关
-    ServiceConnection conn;
-    QRXmitService myService = null;
-    QRXmitService.QrAIDLServiceBinder myBinder = null;
+    private ServiceConnection conn;
+    private QRXmitService myService = null;
+    private QRXmitService.QrAIDLServiceBinder myBinder = null;
 
 
 //=================================================================================================================
@@ -99,6 +100,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     //QRCodeView.Delegate
     @Override
     public void onScanQRCodeSuccess(String resultStr) {
+        Log.d("AAA", resultStr);
         /**
          *  （一）数据过滤,包括 重复结果，接收端识别完成，发送端识别完成。
          */
@@ -209,6 +211,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             feedBackDatas = new ArrayList<>();
             feedBackBuffer = new StringBuffer();
             feedBackImgs = new ArrayList<>();
+
             for (int i = 0; i < receveSize; i++) {
                 if (receveContentMap.get(i) == null || TextUtils.isEmpty(receveContentMap.get(i))) {
                     Log.d("SJY", "缺失=" + i);
@@ -255,10 +258,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                 recvTerminalBackSend();
 
             } else {//没有缺失数据
-                //TODO
-                Log.d("SJY", "接收端--数据接收完成");
-                showBitmap("rcvSuccess");
-                //保存图片
+                //保存文件
                 saveFile();
             }
         }
@@ -280,6 +280,13 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     Runnable feedBackTask = new Runnable() {
         @Override
         public void run() {
+            //没有缺失，直接结束
+            if (feedBackImgs.size() <= 0) {
+                //发送结束标记，结束标记为：QrCodeContentReceiveOver
+                showBitmap(receiveOver_Content + SUCCESS);
+                return;
+            }
+            //有缺失发送
             if (recvCounts < feedBackImgs.size()) {
                 img_result.setImageBitmap(feedBackImgs.get(recvCounts));
                 recvCounts++;
@@ -292,10 +299,10 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     };
 
     /**
-     * TODO
      * 接收端 保存文件
      */
     private void saveFile() {
+
         new AsyncTask<Void, Void, String>() {
             @Override
             protected String doInBackground(Void... voids) {
@@ -308,23 +315,23 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                     data += receveContentMap.get(i);
                     receiveContentDatas.add(str);
                 }
-                return IOUtils.base64ToFile(data, "zip");
+                return IOUtils.StringToFile(data, recvFlePath);
             }
 
             @Override
             protected void onPostExecute(String strPath) {
-                if (TextUtils.isEmpty(strPath)) {
-                    Log.e("SJY", "异常，无图片路径");
-                } else {
-                    //aidl 与测试b通讯
-                    try {
-                        fileBinder.QRRecv(strPath);
-                    } catch (RemoteException e) {
-                        e.printStackTrace();
-                    }
-                }
+                //发送结束二维码
+                feedBackImgs = new ArrayList<>();
+                recvTerminalBackSend();
 
+                //aidl 与测试b通讯
+                try {
+                    fileBinder.QRRecv(strPath);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
             }
+
         }.execute();
     }
 
@@ -365,7 +372,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
 
     /**
      * 发送端 结束标记处理（实时扫描结果）
-     * 数据格式：QrCodeContentReceiveOver
+     * 数据格式：QrCodeContentReceiveOver或QrCodeContentReceiveOverSuccess
      *
      * @param resultStr
      */
@@ -376,33 +383,41 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             //再一次过滤，保证拿到结束标记 只处理一次
             return;
         }
+
         //注意该标记需要清除，否则容易出问题，清除时间在发送二维码处
         lastSendOver = resultStr;
-        //查找缺失数据并拼接
-        new AsyncTask<Void, Void, List<Bitmap>>() {
-            @Override
-            protected List<Bitmap> doInBackground(Void... voids) {
-                List<Bitmap> maps = new ArrayList<>();
-                //利用位置信息，取bitmap
-                for (int i = 0; i < sendBackList.size(); i++) {
-                    for (int j = 0; j < sendImgs.size(); j++) {
-                        if (sendBackList.get(i) == j) {
-                            maps.add(sendImgs.get(j));
+
+        //说明格式是QrCodeContentReceiveOverSuccess,文件传输完成，回调aidl。
+        if (resultStr.length() > receiveOver_Content.length()) {
+            //TODO 统计耗时 清除所有发送端参数
+
+
+        } else {//格式是QrCodeContentReceiveOver
+            //查找缺失数据并拼接
+            new AsyncTask<Void, Void, List<Bitmap>>() {
+                @Override
+                protected List<Bitmap> doInBackground(Void... voids) {
+                    List<Bitmap> maps = new ArrayList<>();
+                    //利用位置信息，取bitmap
+                    for (int i = 0; i < sendBackList.size(); i++) {
+                        for (int j = 0; j < sendImgs.size(); j++) {
+                            if (sendBackList.get(i) == j) {
+                                maps.add(sendImgs.get(j));
+                            }
                         }
                     }
+                    return maps;
                 }
-                return maps;
-            }
 
-            @Override
-            protected void onPostExecute(List<Bitmap> bitmaps) {
-                super.onPostExecute(bitmaps);
-                sendImgsMore = bitmaps;
-                //发送二维码
-                startSendMore();
-            }
-        }.execute();
-
+                @Override
+                protected void onPostExecute(List<Bitmap> bitmaps) {
+                    super.onPostExecute(bitmaps);
+                    sendImgsMore = bitmaps;
+                    //发送二维码
+                    startSendMore();
+                }
+            }.execute();
+        }
     }
 
     /**
@@ -424,6 +439,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
      */
     private void startSendMore() {
         sendCounts = 0;
+        lastSendOver = "";//清除，否则该方法不再出发。
         handler.removeCallbacks(moreSendTask);
         handler.post(moreSendTask);
     }
@@ -597,8 +613,10 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     @Override
     protected void onDestroy() {
         mZBarView.onDestroy(); // 销毁二维码扫描控件
-        //TODO
-//        handler.removeCallbacks(sendtask);
+        handler.removeCallbacks(recvTerminalOverTask);
+        handler.removeCallbacks(feedBackTask);
+        handler.removeCallbacks(firstSendTask);
+        handler.removeCallbacks(moreSendTask);
         if (conn != null) {
             unbindService(conn);
         }
