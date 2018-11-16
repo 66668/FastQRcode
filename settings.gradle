@@ -1,1 +1,1 @@
-include ':app', ':lib_zbar', ':lib_filepicker', ':clientdemo'
+include ':app', ':lib_zbar', ':lib_filepicker', ':clientdemo', ':fileapp'

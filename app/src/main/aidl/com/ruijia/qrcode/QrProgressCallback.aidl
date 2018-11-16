@@ -1,9 +1,10 @@
 // QrProgressCallback.aidl
 package com.ruijia.qrcode;
 
-// Declare any non-default types here with import statements
 /**
-* qr处理进度回调给客户端，方便了解进度
+* 进度回调（绑定到aidl中使用）
+* <p>
+* 链路层处理进度回调给客户端（测试a）
 */
 interface QrProgressCallback {
 

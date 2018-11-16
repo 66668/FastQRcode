@@ -2,8 +2,9 @@
 package com.ruijia.qrcode;
 
 import com.ruijia.qrcode.QrProgressCallback;
-// Declare any non-default types here with import statements
-
+/**
+* 测试a与链路层的aidl,链路层做服务端，测试a做客户端
+*/
 interface QrAIDLInterface {
 
 
