@@ -24,13 +24,13 @@
             </intent-filter>
         </activity>
 
-        <!--aidl两个app通讯的service,类似服务端的service-->
+        <!--aidl 测试a与链路层使用的service,链路层是服务端service-->
         <!--android:enabled="true"   android:exported="true"，设置为true，将Service暴露出去，另一个App才能访问到它-->
         <service
-            android:name="com.ruijia.qrcode.service.QRXmitService"
+            android:name=".service.QRXmitService"
             android:enabled="true"
             android:exported="true">
-            <!--通过intent-filter对Intent进行过滤，让另一个app通过action开启服务-->
+            <!--通过intent-filter对Intent进行过滤，让测试a客户端，通过action开启该服务-->
             <intent-filter>
                 <action android:name="com.aidl.filter.myservice" />
             </intent-filter>

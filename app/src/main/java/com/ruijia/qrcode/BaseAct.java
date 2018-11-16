@@ -1,12 +1,19 @@
 package com.ruijia.qrcode;
 
 import android.Manifest;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.os.RemoteException;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 
+import com.ruijia.file.FileAidlInterface;
 import com.ruijia.qrcode.persmission.PermissionHelper;
 import com.ruijia.qrcode.persmission.PermissionInterface;
 
@@ -15,6 +22,11 @@ public class BaseAct extends AppCompatActivity {
     //权限相关
     String[] permissionArray;
     PermissionHelper permissionHelper;
+
+    /**
+     * 测试B与链路层aidl
+     */
+    public FileAidlInterface fileBinder;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -27,6 +39,8 @@ public class BaseAct extends AppCompatActivity {
                 Manifest.permission.READ_EXTERNAL_STORAGE
         };
         toStartPermission();
+        //
+        bind();
     }
 
     private void toStartPermission() {
@@ -83,6 +97,7 @@ public class BaseAct extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        unbind();
         Log.d(TAG, "onDestroy");
     }
 
@@ -104,5 +119,69 @@ public class BaseAct extends AppCompatActivity {
         Log.d(TAG, "onRestart");
     }
 
+    /**
+     * ==================================================================================================================
+     * ============================测试b与链路层的aild连接（链路层是客户端，测试b是服务端）====================================
+     * ==================================================================================================================
+     */
+    private ServiceConnection connection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            //连接服务端的binder
+            fileBinder = FileAidlInterface.Stub.asInterface(service);
+            //设置死亡代理
+            try {
+                service.linkToDeath(mDeathRecipient, 0);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            fileBinder = null;
+        }
+    };
+
+
+    /**
+     * 监听Binder是否死亡
+     */
+    private IBinder.DeathRecipient mDeathRecipient = new IBinder.DeathRecipient() {
+        @Override
+        public void binderDied() {
+            if (fileBinder == null) {
+                return;
+            }
+            fileBinder.asBinder().unlinkToDeath(mDeathRecipient, 0);
+            fileBinder = null;
+            //重新绑定
+            bind();
+        }
+    };
+
+    /**
+     * 设置aidl过滤，连接另一个app的service
+     */
+    public void bind() {
+        Intent intent = new Intent();
+        //设置要调用的app包和对应的service
+        //方式1：
+//        ComponentName componentName= new ComponentName("com.ruijia.qrcode","QRXmitService");
+////        intent.setComponent(componentName);
+        //方式2：
+        //从 Android 5.0开始 隐式Intent绑定服务的方式已不能使用,所以这里需要设置Service所在服务端的包名
+        intent.setPackage("com.ruijia.file");//服务端的包名
+        //通过intent-filter设置的name,找到这个service
+        intent.setAction("com.aidl.filter.fileservice");//过滤
+        bindService(intent, connection, Context.BIND_AUTO_CREATE);//开启Service
+        Log.d("SJY", "绑定服务");
+    }
+
+    public void unbind() {
+        if (connection != null && fileBinder.asBinder().isBinderAlive()) {
+            unbindService(connection);
+        }
+    }
 
 }

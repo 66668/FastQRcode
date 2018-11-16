@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
- * aidl服务端service,给aidl客户端提供service接口
+ * aidl 链路层的服务端service,给aidl客户端提供service接口
  */
 public class QRXmitService extends Service {
     public static final String TAG = "SJY";
@@ -51,9 +51,9 @@ public class QRXmitService extends Service {
     public QRXmitService() {
         handler = new Handler();
         //设置默认发送时间间隔
-        SPUtil.putInt(Constants.TIME_INTERVAL, 150);
+        SPUtil.putInt(Constants.TIME_INTERVAL, Constants.DEFAULT_TIME);
         //默认文件大小
-        SPUtil.putInt(Constants.FILE_SIZE, 5);
+        SPUtil.putInt(Constants.FILE_SIZE, Constants.DEFAULT_SIZE);
     }
 
     @Override

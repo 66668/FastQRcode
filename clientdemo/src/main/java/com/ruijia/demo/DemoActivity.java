@@ -183,7 +183,6 @@ public class DemoActivity extends BaseActivity implements View.OnClickListener {
             e.printStackTrace();
             Log.e(TAG, "binder" + e.toString());
         }
-
     }
 
     private void QrRecv() {

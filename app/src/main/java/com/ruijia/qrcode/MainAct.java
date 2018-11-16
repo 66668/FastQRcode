@@ -9,6 +9,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.RemoteException;
 import android.os.Vibrator;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
@@ -38,7 +39,6 @@ import lib.ruijia.zbar.qrodecontinue.ContinueQRCodeView;
 public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
 
     //===================变量=====================
-
     //控件
     private ZBarContinueView mZBarView; //zbar
     private ImageView img_result;
@@ -46,8 +46,8 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private int size = 400;//200就够了，再大也没用
     private Handler handler;
     //==============通用标记==============
-    private long PSOTDELAY_TIME_SEND = 150;//发送间隔时间
-    private long PSOTDELAY_TIME_BACK = 150;//缺失发送间隔时间
+    private long PSOTDELAY_TIME_SEND = 150;//默认 发送间隔时间
+    private long PSOTDELAY_TIME_BACK = 150;//默认 缺失发送间隔时间
     private String sendOver_Contnet = "QrcodeContentSendOver";//发送端 所有数据一次发送完成，发送结束标记
     private String receiveOver_Content = "QrCodeContentReceiveOver";//接收端 完全收到数据，发送结束标记
     private String endTag = "RJQR";
@@ -316,7 +316,12 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                 if (TextUtils.isEmpty(strPath)) {
                     Log.e("SJY", "异常，无图片路径");
                 } else {
-                    Log.d("SJY", "接收图片已保存，路径：" + strPath);
+                    //aidl 与测试b通讯
+                    try {
+                        fileBinder.QRRecv(strPath);
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
                 }
 
             }
@@ -521,7 +526,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         size = 400;
         handler = new Handler();
         //获取缓存的时间间隔
-        PSOTDELAY_TIME_SEND = SPUtil.getInt(Constants.TIME_INTERVAL, 150);
+        PSOTDELAY_TIME_SEND = SPUtil.getInt(Constants.TIME_INTERVAL, Constants.DEFAULT_TIME);
         PSOTDELAY_TIME_BACK = PSOTDELAY_TIME_SEND;
         initSendParams();
         initRecvParams();
