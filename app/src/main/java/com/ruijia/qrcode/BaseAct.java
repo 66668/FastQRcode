@@ -179,7 +179,7 @@ public class BaseAct extends AppCompatActivity {
     }
 
     public void unbind() {
-        if (connection != null && fileBinder.asBinder().isBinderAlive()) {
+        if (connection != null && fileBinder != null && fileBinder.asBinder().isBinderAlive()) {
             unbindService(connection);
         }
     }
