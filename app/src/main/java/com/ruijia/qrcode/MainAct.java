@@ -7,9 +7,11 @@ import android.graphics.Bitmap;
 import android.hardware.Camera;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.os.SystemClock;
 import android.os.Vibrator;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
@@ -57,7 +59,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private String lastSendOver = "";//发送端使用的标记
     //TODO  需要再优化，暂定
     private boolean isFirst = true;//是否走onCreate生命周期
-
+    private CountDownTimer countDownTimer;//倒计时类
     //===================发送端操作=====================
     private List<String> sendDatas = new ArrayList<>();//发送端 数据
     private List<Bitmap> sendImgs = new ArrayList<>();//发送端 数据
@@ -66,7 +68,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private String sendFlePath;//发送端 文件路径
     private int sendSize = 0;//发送端 文件路径
     private int sendCounts = 0;//发送次数统计，handler发送使用
-
+    private boolean isSending = false;//代码成对出现，用于保护发送
     //时间设置
     private long handler_lastTime;//用于计算发送耗时,
 
@@ -275,33 +277,39 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         //需要清除 lastRecvOver标记，否则，二次+接收端收不到结束处理标记
         lastRecvOver = "";
         recvCounts = 0;
-        handler.post(feedBackTask);
-    }
 
-    /**
-     * 接收端 发送二维码
-     */
-    Runnable feedBackTask = new Runnable() {
-        @Override
-        public void run() {
-            handler.removeCallbacks(this);
-            //没有缺失，直接结束
-            if (feedBackImgs.size() <= 0) {
-                //发送结束标记，结束标记为：QrCodeContentReceiveOver
-                showBitmap(receiveOver_Content + SUCCESS);
-                return;
+        //开启倒计时
+        long totalTime = (feedBackImgs.size() + 2) * PSOTDELAY_TIME_BACK;//总时间
+        countDownTimer = null;
+        countDownTimer = new CountDownTimer(totalTime, PSOTDELAY_TIME_BACK) {
+            @Override
+            public void onTick(long l) { // 每隔internal毫秒就会回调一次该方法
+                //回调发送间隔，用于计算识别速度，也用于鉴别 发送间隔是否标准
+                long time = System.currentTimeMillis() - handler_lastTime;
+                //没有缺失，直接结束
+                if (feedBackImgs.size() <= 0) {
+                    //发送结束标记，结束标记为：QrCodeContentReceiveOver
+                    showBitmap(receiveOver_Content + SUCCESS);
+                    return;
+                }
+                //有缺失发送
+                if (recvCounts < feedBackImgs.size()) {
+                    img_result.setImageBitmap(feedBackImgs.get(recvCounts));
+                    recvCounts++;
+                } else {
+                    //发送结束标记，结束标记为：QrCodeContentReceiveOver
+                    showBitmap(receiveOver_Content);
+                }
+                handler_lastTime = System.currentTimeMillis();
             }
-            //有缺失发送
-            if (recvCounts < feedBackImgs.size()) {
-                img_result.setImageBitmap(feedBackImgs.get(recvCounts));
-                recvCounts++;
-                handler.postDelayed(this, PSOTDELAY_TIME_BACK);
-            } else {
-                //发送结束标记，结束标记为：QrCodeContentReceiveOver
-                showBitmap(receiveOver_Content);
+
+            @Override
+            public void onFinish() { // 当countTime倒计时到了之后，会回调该方法
+                Log.d("SJY", "倒计时结束");
             }
-        }
-    };
+        };
+        countDownTimer.start(); // 最后记得start
+    }
 
     /**
      * 接收端 保存文件
@@ -426,20 +434,50 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     }
 
     /**
-     * 发送二维码
+     * 第一次发送二维码
      */
+    private long lastInternal;
+
     private void startSend() {
         Log.d("SJY", "发送端发送二维码");
         //保存当前时间节点。
         handler_lastTime = System.currentTimeMillis();
         SPUtil.putLong(Constants.START_SEND_TIME, handler_lastTime);
         sendCounts = 0;
-        if (isFirst) {
-            handler.postDelayed(firstSendTask, 1500);
-            isFirst = false;
-        } else {
-            handler.post(firstSendTask);
-        }
+        //开启倒计时
+        long totalTime = (sendImgs.size() + 3) * PSOTDELAY_TIME_BACK;//总时间
+        lastInternal = totalTime;
+        countDownTimer = null;
+        countDownTimer = new CountDownTimer(totalTime, PSOTDELAY_TIME_BACK) {
+            @Override
+            public void onTick(long internal) { // 每隔internal毫秒就会回调一次该方法
+                //回调发送间隔，用于计算识别速度，也用于鉴别 发送间隔是否标准
+                myService.sendAidlQrUnitTime((internal - lastInternal), sendImgs.size(), sendCounts, "firstSend" + internal);
+                //
+                if (sendCounts < sendImgs.size()) {
+                    img_result.setImageBitmap(sendImgs.get(sendCounts));
+                    sendCounts++;
+                } else {
+                    //发送结束标记，结束标记为：QrcodeContentSendOver+文件路径+文件大小（7位数）
+                    try {
+                        String sizeStr = ConvertUtils.int2String(sendSize);
+                        showBitmap(sendOver_Contnet + sendFlePath + sizeStr);
+                    } catch (Exception e) {
+                        //已处理
+                        e.printStackTrace();
+                    }
+                }
+                lastInternal = internal;
+            }
+
+            @Override
+            public void onFinish() { // 当countTime倒计时到了之后，会回调该方法
+                Log.d("SJY", "firstSend-end");
+            }
+        };
+        countDownTimer.start(); // 最后记得start
+
+
     }
 
     /**
@@ -450,66 +488,39 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         lastSendOver = "";//清除，否则该方法不再出发。
         //此处不保存时间节点，因为统计用不到
         handler_lastTime = System.currentTimeMillis();
-        handler.removeCallbacks(moreSendTask);
-        handler.post(moreSendTask);
+        //开启倒计时
+        long totalTime = (sendImgsMore.size() + 2) * PSOTDELAY_TIME_SEND;//总时间
+        countDownTimer = null;
+        countDownTimer = new CountDownTimer(totalTime, PSOTDELAY_TIME_SEND) {
+            @Override
+            public void onTick(long l) { // 每隔internal毫秒就会回调一次该方法
+                //回调发送间隔，用于计算识别速度，也用于鉴别 发送间隔是否标准
+                long time = System.currentTimeMillis() - handler_lastTime;
+                myService.sendAidlQrUnitTime(time, sendImgs.size(), sendCounts, "firstSend");
+                //
+                if (sendImgsMore.size() > 0 && sendCounts < sendImgsMore.size()) {
+                    img_result.setImageBitmap(sendImgsMore.get(sendCounts));
+                    sendCounts++;
+                } else {
+                    //发送结束标记，结束标记为：QrcodeContentSendOver+文件路径+文件大小（7位数）
+                    try {
+                        String sizeStr = ConvertUtils.int2String(sendSize);
+                        showBitmap(sendOver_Contnet + sendFlePath + sizeStr);
+                    } catch (Exception e) {
+                        //已处理
+                        e.printStackTrace();
+                    }
+                }
+                handler_lastTime = System.currentTimeMillis();
+            }
+
+            @Override
+            public void onFinish() { // 当countTime倒计时到了之后，会回调该方法
+                Log.d("SJY", "倒计时结束");
+            }
+        };
+        countDownTimer.start(); // 最后记得start
     }
-
-    /**
-     * 初次发送
-     */
-    Runnable firstSendTask = new Runnable() {
-        @Override
-        public void run() {
-            handler.removeCallbacks(this);
-            //回调发送间隔，用于计算识别速度，也用于鉴别 发送间隔是否标准
-            long time = System.currentTimeMillis() - handler_lastTime;
-            myService.sendAidlQrUnitTime(time, sendImgs.size(), sendCounts, "firstSend");
-            //
-            if (sendCounts < sendImgs.size()) {
-                img_result.setImageBitmap(sendImgs.get(sendCounts));
-                sendCounts++;
-                handler.postDelayed(this, PSOTDELAY_TIME_SEND);
-            } else {
-                //发送结束标记，结束标记为：QrcodeContentSendOver+文件路径+文件大小（7位数）
-                try {
-                    String sizeStr = ConvertUtils.int2String(sendSize);
-                    showBitmap(sendOver_Contnet + sendFlePath + sizeStr);
-                } catch (Exception e) {
-                    //已处理
-                    e.printStackTrace();
-                }
-            }
-            handler_lastTime = System.currentTimeMillis();
-        }
-    };
-
-
-    //发送端二次+ 发送缺失数据
-    Runnable moreSendTask = new Runnable() {
-        @Override
-        public void run() {
-            handler.removeCallbacks(this);
-            //回调发送间隔，用于计算识别速度，也用于鉴别 发送间隔是否标准
-            long time = System.currentTimeMillis() - handler_lastTime;
-            myService.sendAidlQrUnitTime(time, sendImgs.size(), sendCounts, "firstSend");
-            //
-            if (sendImgsMore.size() > 0 && sendCounts < sendImgsMore.size()) {
-                img_result.setImageBitmap(sendImgsMore.get(sendCounts));
-                sendCounts++;
-                handler.postDelayed(this, PSOTDELAY_TIME_SEND);
-            } else {
-                //发送结束标记，结束标记为：QrcodeContentSendOver+文件路径+文件大小（7位数）
-                try {
-                    String sizeStr = ConvertUtils.int2String(sendSize);
-                    showBitmap(sendOver_Contnet + sendFlePath + sizeStr);
-                } catch (Exception e) {
-                    //已处理
-                    e.printStackTrace();
-                }
-            }
-        }
-    };
-
 
 //--------------------------------------------------------------------------
 
@@ -640,9 +651,6 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     protected void onDestroy() {
         mZBarView.onDestroy(); // 销毁二维码扫描控件
         handler.removeCallbacks(recvTerminalOverTask);
-        handler.removeCallbacks(feedBackTask);
-        handler.removeCallbacks(firstSendTask);
-        handler.removeCallbacks(moreSendTask);
         if (conn != null) {
             unbindService(conn);
         }
