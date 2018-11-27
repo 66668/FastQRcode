@@ -1,7 +1,7 @@
 package com.ruijia.qrcode;
 
 /**
- * 常量池
+ * 原生摄像头的常量池
  */
 public class Constants {
     /**

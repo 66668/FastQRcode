@@ -33,7 +33,8 @@ android {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'com.android.support:appcompat-v7:28.+'
+    //zbar 只用于识别
     implementation project(':lib_zbar')
-    //
-    api 'com.google.zxing:core:3.3.3'
+    //zxing 只用于生成二维码使用
+    implementation 'com.google.zxing:core:3.3.3'
 }
