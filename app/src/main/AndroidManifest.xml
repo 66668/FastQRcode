@@ -34,7 +34,7 @@
             android:exported="true">
             <!--通过intent-filter对Intent进行过滤，让测试a客户端，通过action开启该服务-->
             <intent-filter>
-                <action android:name="com.aidl.filter.myservice" />
+                <action android:name="com.aidlservice.qrcamera" />
             </intent-filter>
         </service>
     </application>

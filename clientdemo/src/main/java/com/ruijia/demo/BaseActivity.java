@@ -157,7 +157,8 @@ public class BaseActivity extends AppCompatActivity {
         //从 Android 5.0开始 隐式Intent绑定服务的方式已不能使用,所以这里需要设置Service所在服务端的包名
         intent.setPackage("com.ruijia.qrcode");//服务端的包名
         //通过intent-filter设置的name,找到这个service
-        intent.setAction("com.aidl.filter.myservice");//过滤
+//        intent.setAction("com.aidlservice.qrmodule");//过滤 （模组版）
+        intent.setAction("com.aidlservice.qrcamera");//过滤(原生摄像头版)
         bindService(intent, connection, Context.BIND_AUTO_CREATE);//开启Service
         Log.d("SJY", "绑定服务");
     }
