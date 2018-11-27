@@ -215,7 +215,7 @@ public class DemoActivity extends BaseActivity implements View.OnClickListener {
         super.clientCreateQrImgProgress(total, position, msg);
         //可以做成进度条
 
-        Log.d(TAG, "文件集中转二维码图进度=" + (100*(position + 1) / total) + "%--createQrImgProgress-total=" + total + "--position=" + position + "--msg=" + msg + "ms");
+        Log.d(TAG, "文件集中转二维码图进度=" + (100 * (position + 1) / total) + "%--createQrImgProgress-total=" + total + "--position=" + position + "--msg=" + msg + "ms");
     }
 
     //06
@@ -231,7 +231,7 @@ public class DemoActivity extends BaseActivity implements View.OnClickListener {
     void clientTransProgress(long time, int total, int position, String msg) {
         super.clientTransProgress(time, total, position, msg);
         //二维码发送进度，这里只统计了handler处的发送，不统计是否被识别的进度。
-        Log.d(TAG, "二维码发送进度：" + (100*position / total) + "%--单张发送耗时=" + time + "ms----msg=" + msg);
+        Log.d(TAG, "二维码发送进度：" + (100 * position / total) + "%--图片显示在界面的时长=" + time + "ms----msg=" + msg + "--position=" + position);
     }
 
 
