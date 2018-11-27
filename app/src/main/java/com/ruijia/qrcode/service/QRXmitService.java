@@ -108,7 +108,6 @@ public class QRXmitService extends Service {
             mListener.unregister(listener);
         }
 
-
     }
 
 
@@ -145,6 +144,9 @@ public class QRXmitService extends Service {
         if (file == null || !file.exists()) {
             isTrans(false, "文件不存在");
         } else {
+            //保存时间节点，用于统计传输总耗时
+            SPUtil.putLong(Constants.START_TIME, System.currentTimeMillis());
+            //
             selectPath = file.getAbsolutePath();
             split2IO(file);
         }
@@ -323,6 +325,8 @@ public class QRXmitService extends Service {
                     size = newDatas.size();
                     //新数据转qrbitmap
                     createQrBitmap();
+                    //调起链路层传输数据
+                    serviceStartAct();
                 }
 
             }
@@ -717,9 +721,9 @@ public class QRXmitService extends Service {
     }
 
     /**
-     * 识别出结果的回调
+     * act调用，发送端发送一条二维码实际耗时
      */
-    public void setAidlQrCodeSuccess(long successTime, int size, int pos, String msg) {
+    public void sendAidlQrUnitTime(long successTime, int size, int pos, String msg) {
         qrTransProgress(successTime, size, pos, msg);
     }
 

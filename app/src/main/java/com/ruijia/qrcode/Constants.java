@@ -27,4 +27,22 @@ public class Constants {
      */
     public static final int MAX_TIMES = 20;
 
+
+    /**
+     * 最开始的时间
+     * <p>
+     * 从链路层的service接收到文件开始的时间，
+     * <p>
+     * 很重要的标记，当识别完成后，最新时间 减去 该时间，就是文件传输的总耗时。
+     */
+    public static final String START_TIME = "startTime";
+
+    /**
+     * 准备发送二维码的时间
+     * <p>
+     * 很重要的标记，当识别完成后，最新时间 减去 该时间，就是二维码识别的总耗时。
+     */
+    public static final String START_SEND_TIME = "sendQrTime";
+
+
 }

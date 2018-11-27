@@ -55,6 +55,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private String lastText;//
     private String lastRecvOver = "";//接收端使用的标记
     private String lastSendOver = "";//发送端使用的标记
+    //TODO  需要再优化，暂定
     private boolean isFirst = true;//是否走onCreate生命周期
 
     //===================发送端操作=====================
@@ -65,6 +66,9 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private String sendFlePath;//发送端 文件路径
     private int sendSize = 0;//发送端 文件路径
     private int sendCounts = 0;//发送次数统计，handler发送使用
+
+    //时间设置
+    private long handler_lastTime;//用于计算发送耗时,
 
     //===================接收端操作=====================
     private Map<Integer, String> receveContentMap = new HashMap<>();//接收的数据暂时保存到map中，最终保存到receiveDatas
@@ -280,6 +284,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     Runnable feedBackTask = new Runnable() {
         @Override
         public void run() {
+            handler.removeCallbacks(this);
             //没有缺失，直接结束
             if (feedBackImgs.size() <= 0) {
                 //发送结束标记，结束标记为：QrCodeContentReceiveOver
@@ -424,7 +429,10 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
      * 发送二维码
      */
     private void startSend() {
-        Log.d("SJY", "startShow");
+        Log.d("SJY", "发送端发送二维码");
+        //保存当前时间节点。
+        handler_lastTime = System.currentTimeMillis();
+        SPUtil.putLong(Constants.START_SEND_TIME, handler_lastTime);
         sendCounts = 0;
         if (isFirst) {
             handler.postDelayed(firstSendTask, 1500);
@@ -440,6 +448,8 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private void startSendMore() {
         sendCounts = 0;
         lastSendOver = "";//清除，否则该方法不再出发。
+        //此处不保存时间节点，因为统计用不到
+        handler_lastTime = System.currentTimeMillis();
         handler.removeCallbacks(moreSendTask);
         handler.post(moreSendTask);
     }
@@ -450,6 +460,11 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     Runnable firstSendTask = new Runnable() {
         @Override
         public void run() {
+            handler.removeCallbacks(this);
+            //回调发送间隔，用于计算识别速度，也用于鉴别 发送间隔是否标准
+            long time = System.currentTimeMillis() - handler_lastTime;
+            myService.sendAidlQrUnitTime(time, sendImgs.size(), sendCounts, "firstSend");
+            //
             if (sendCounts < sendImgs.size()) {
                 img_result.setImageBitmap(sendImgs.get(sendCounts));
                 sendCounts++;
@@ -464,6 +479,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                     e.printStackTrace();
                 }
             }
+            handler_lastTime = System.currentTimeMillis();
         }
     };
 
@@ -472,7 +488,11 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     Runnable moreSendTask = new Runnable() {
         @Override
         public void run() {
-
+            handler.removeCallbacks(this);
+            //回调发送间隔，用于计算识别速度，也用于鉴别 发送间隔是否标准
+            long time = System.currentTimeMillis() - handler_lastTime;
+            myService.sendAidlQrUnitTime(time, sendImgs.size(), sendCounts, "firstSend");
+            //
             if (sendImgsMore.size() > 0 && sendCounts < sendImgsMore.size()) {
                 img_result.setImageBitmap(sendImgsMore.get(sendCounts));
                 sendCounts++;
@@ -524,7 +544,6 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         setContentView(R.layout.act_main);
         isFirst = true;
         initView();
-        initService();
     }
 
 
@@ -594,6 +613,13 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
 //            mZBarView.startCamera(cameraId); // 打开前置摄像头开始预览，但是并未开始识别
             mZBarView.startSpot(); // 显示扫描框，并且延迟0.1秒后开始识别
         }
+        //
+        if (conn != null && myBinder != null && myService != null) {
+            //act通知service,可以发送数据传输了,
+            myService.startServiceTrans();
+        } else {
+            initService();
+        }
     }
 
     @Override
@@ -656,6 +682,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private OnServiceAndActListener myListener = new OnServiceAndActListener() {
         @Override
         public void onQrsend(String path, List<String> newData, List<Bitmap> maps) {
+            Log.d("SJY", "onQrsend监听触发发送按钮");
             //清空发送端数据，保证本次数据不受上一次影响
             initSendParams();
             //赋值

@@ -15,7 +15,7 @@ import android.widget.TextView;
 import cn.qqtheme.framework.picker.FilePicker;
 
 /**
- * 应用层/业务层demo
+ * 应用层/发送端/业务层demo
  */
 public class DemoActivity extends BaseActivity implements View.OnClickListener {
     public static final String TAG = "SJY";
@@ -33,7 +33,6 @@ public class DemoActivity extends BaseActivity implements View.OnClickListener {
         setContentView(R.layout.activity_main);
         initMyView();
     }
-
 
 
     private void initMyView() {
@@ -179,58 +178,76 @@ public class DemoActivity extends BaseActivity implements View.OnClickListener {
 
     //-------------------------服务端回调-------------------------------
 
-
+    //01
     @Override
     void clientIsTrans(boolean isSuccess, String msg) {
         super.clientIsTrans(isSuccess, msg);
         Log.d(TAG, "isTrans-isSuccess=" + isSuccess + "--msg=" + msg);
     }
 
+    //02
     @Override
     void clientSplitToIoTime(long time, String msg) {
         super.clientSplitToIoTime(time, msg);
-        Log.d(TAG, "splitToIoTime-time=" + time + "--msg=" + msg);
+        //文件转IO耗时
+        Log.d(TAG, "splitToIoTime-time=" + time + "ms--msg=" + msg);
     }
 
+    //03
     @Override
     void clientSplitToArrayTime(long time, String msg) {
         super.clientSplitToIoTime(time, msg);
-        Log.d(TAG, "SplitToArrayTime-time=" + time + "--msg=" + msg);
+        //IO转String耗时
+        Log.d(TAG, "SplitToArrayTime-time=" + time + "ms--msg=" + msg);
     }
 
+    //04
     @Override
     void clientCreateNewArrayTime(long time, String msg) {
         super.clientSplitToIoTime(time, msg);
-        Log.d(TAG, "createNewArrayTime-time=" + time + "--msg=" + msg);
+        // String分成String片段耗时
+        Log.d(TAG, "createNewArrayTime-time=" + time + "ms--msg=" + msg);
     }
 
-    @Override
-    void clientCreateQrImgTime(long time, String msg) {
-        super.clientCreateQrImgTime(time, msg);
-        Log.d(TAG, "createQrImgTime-time=" + time + "--msg=" + msg);
-    }
-
+    //05
     @Override
     void clientCreateQrImgProgress(int total, int position, String msg) {
         super.clientCreateQrImgProgress(total, position, msg);
-        Log.d(TAG, "createQrImgProgress-total=" + total + "--position=" + position + "--msg=" + msg);
+        //可以做成进度条
+
+        Log.d(TAG, "文件集中转二维码图进度=" + (100*(position + 1) / total) + "%--createQrImgProgress-total=" + total + "--position=" + position + "--msg=" + msg + "ms");
     }
 
+    //06
+    @Override
+    void clientCreateQrImgTime(long time, String msg) {
+        super.clientCreateQrImgTime(time, msg);
+        //后台传送前，二维码耗时
+        Log.d(TAG, "String片段转二维码图总耗时：" + time + "ms-----------msg=" + msg);
+    }
+
+    //07
     @Override
     void clientTransProgress(long time, int total, int position, String msg) {
         super.clientTransProgress(time, total, position, msg);
-        Log.d(TAG, "二维码进度：" + msg + "--识别耗时=" + time + "ms--total=" + total + "--position=" + position);
+        //二维码发送进度，这里只统计了handler处的发送，不统计是否被识别的进度。
+        Log.d(TAG, "二维码发送进度：" + (100*position / total) + "%--单张发送耗时=" + time + "ms----msg=" + msg);
     }
 
+
+    //08
     @Override
     void clientTransTime(long time, String msg) {
         super.clientTransTime(time, msg);
+        //传送完成 总耗时
         Log.d(TAG, "transTime-time=" + time + "--msg=" + msg);
     }
 
+    //09
     @Override
     void clientTransComplete() {
         super.clientTransComplete();
+        //完成
         Log.d(TAG, "transComplete");
     }
 }
