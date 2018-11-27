@@ -572,7 +572,8 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         size = 400;
         handler = new Handler();
         //获取缓存的时间间隔
-        PSOTDELAY_TIME_SEND = SPUtil.getInt(Constants.TIME_INTERVAL, Constants.DEFAULT_TIME);
+//        PSOTDELAY_TIME_SEND = SPUtil.getInt(Constants.TIME_INTERVAL, Constants.DEFAULT_TIME);
+        PSOTDELAY_TIME_SEND = 1000;
         PSOTDELAY_TIME_BACK = PSOTDELAY_TIME_SEND;
         initSendParams();
         initRecvParams();
