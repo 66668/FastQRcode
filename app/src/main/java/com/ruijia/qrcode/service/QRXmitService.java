@@ -24,6 +24,10 @@ import com.ruijia.qrcode.utils.SPUtil;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 
@@ -136,9 +140,14 @@ public class QRXmitService extends Service {
      * (1)验证文件是否可以传送
      * <p>
      * (2)文件分解成字符流，在分解成 指定长度的
+     * <p>
+     * 不管测试app端连续几次触发该方法，都需要将上一次该方法的调用覆盖，数据清空，也包括链路层传输的清空。
      */
     public void srvQrSend(String localPath) {
         Log.d("SJY", "QRXmitService--QrSend-localPath=" + localPath);
+        //
+        clearLastData();
+        //
         //判断文件是否存在
         File file = new File(localPath);
         if (file == null || !file.exists()) {
@@ -158,6 +167,19 @@ public class QRXmitService extends Service {
      */
     public String srvQRRecv() {
         return "请参考回调";
+    }
+
+    /**
+     * TODO  未做
+     * <p>
+     * 清空处理
+     */
+    private void clearLastData() {
+        selectPath = "";//当前传输的文件
+        OnServiceAndActListener listener;//
+        newDatas = new ArrayList<>();
+        maps = new ArrayList<>();
+        size = 0;//当前文件的list长度
     }
 
 
@@ -316,17 +338,35 @@ public class QRXmitService extends Service {
                     return;
                 } else {
                     /**
-                     * 方式1：直接使用新数据，识别的时候一张张转qrbitmap
-                     * 方式2：集中转qrbitmap,识别的间隔速度可以短一些。
-                     *
-                     * 本次用方式2测试。
+                     * TODO list集中转bitmap,可以将list分成多段，让子线程执行，缩短时间
+                     * 集中转qrbitmap
                      */
                     newDatas = list;
                     size = newDatas.size();
-                    //新数据转qrbitmap
-                    createQrBitmap();
+
                     //调起链路层传输数据
                     serviceStartAct();
+
+                    //转qrbitmap 方式1
+//                      createQrBitmap();
+
+//                    方式2:
+                    try {
+                        if (size < 50) {
+                            createQrBitmap2(newDatas, 1);
+                        } else if (size < 100) {
+                            createQrBitmap2(newDatas, 2);
+                        } else if (size < 500) {
+                            createQrBitmap2(newDatas, 3);
+                        } else {
+                            createQrBitmap2(newDatas, 4);
+                        }
+                        //测试ArrayList的非线程安全
+                        Log.d("SJY", "原数据大小=" + newDatas.size() + "结果大小=" + maps.size());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        Log.e("SJY", "createQrBitmap异常：" + e.toString());
+                    }
                 }
 
             }
@@ -335,10 +375,12 @@ public class QRXmitService extends Service {
 
     /**
      * (4)list转qrbitmap
+     * 方式1：list大段直接转，耗时长
      *
      * <p>
      */
     private void createQrBitmap() {
+
         new AsyncTask<Void, Void, List<Bitmap>>() {
 
             @Override
@@ -354,7 +396,6 @@ public class QRXmitService extends Service {
                     //回调客户端
                     long end = System.currentTimeMillis() - start;
                     createQrImgProgress(size, i, "生成单张二维码耗时=" + end);
-
                 }
                 //回调客户端
                 long time = System.currentTimeMillis() - startTime;
@@ -365,14 +406,75 @@ public class QRXmitService extends Service {
             @Override
             protected void onPostExecute(List<Bitmap> bitmapList) {
                 super.onPostExecute(bitmapList);
+                maps = new ArrayList<>();
                 maps = bitmapList;
                 //service与act的交互
                 //调起链路层传输数据
                 serviceStartAct();
             }
         }.execute();
-
     }
+
+    /**
+     * (4)list转qrbitmap
+     * <p>
+     * 方式2：并发线程池方式
+     * <p>
+     * 结论：ArrayList 非线程安全，容易导致size变大，线程数再大速度只能缩短一倍。
+     *
+     * @param list
+     * @param nThreads
+     * @throws Exception
+     */
+    List<String> subList = new ArrayList<>();
+
+    public void createQrBitmap2(List<String> list, final int nThreads) throws Exception {
+        maps = new ArrayList<>();
+        subList = new ArrayList<>();
+        int size = list.size();
+        ExecutorService executorService = Executors.newFixedThreadPool(nThreads);
+        List<Future<List<Bitmap>>> futures = new ArrayList<Future<List<Bitmap>>>(nThreads);
+        long startTime = System.currentTimeMillis();//统计
+        for (int i = 0; i < nThreads; i++) {
+            if (i == (nThreads - 1)) {
+                subList = list.subList(size / nThreads * i, list.size());
+            } else {
+                subList = list.subList(size / nThreads * i, size / nThreads * (i + 1));
+            }
+
+            final int finalI = i;
+            Callable<List<Bitmap>> task = new Callable<List<Bitmap>>() {
+                @Override
+                public List<Bitmap> call() throws Exception {
+                    List<Bitmap> unitLists = new ArrayList<>();
+                    long startTime = System.currentTimeMillis();//统计
+                    for (int j = 0; j < subList.size(); j++) {
+                        long start = System.currentTimeMillis();//统计
+                        Bitmap bitmap = CodeUtils.createByMultiFormatWriter(subList.get(j), 400);
+                        unitLists.add(bitmap);
+                        //回调客户端
+                        long end = System.currentTimeMillis() - start;
+                        createQrImgProgress(subList.size(), j, "生成单张二维码耗时=" + end + "---线程池编号：" + finalI);
+                    }
+                    //回调客户端
+                    long time = System.currentTimeMillis() - startTime;
+                    createQrImgTime(time, "单个线程池编号:" + finalI);
+                    return unitLists;
+                }
+            };
+            futures.add(executorService.submit(task));
+        }
+        for (Future<List<Bitmap>> mfuture : futures) {
+            maps.addAll(mfuture.get());
+        }
+        //清空数据。
+        subList = new ArrayList<>();
+        //回调客户端
+        long time = System.currentTimeMillis() - startTime;
+        createQrImgTime(time, "所有线程池执行:list--->qrbitmap");
+        executorService.shutdown();
+    }
+
 
     //-----------------------《服务端-->客户端》回调（不同进程）----------------------
 
@@ -407,6 +509,11 @@ public class QRXmitService extends Service {
                 }
             }
         });
+        //false情况下，基本宣告这次文件传输是失败的，所以清空所有数据
+        if (!isSuccess) {
+            clearLastData();
+        }
+
     }
 
     /**

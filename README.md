@@ -19,5 +19,18 @@
 1. 在service的aidl中添加 register(自己的callback)和unregister(自己的callback)
 2. 在服务端的aidl中再创建一个自己的callback,添加回调的方法。
 
+## 性能优化分析
+1. 倒计时优化:handler.postdelay倒计时不准确，改为 Timer+runOnUiThread方式
+2. list<String> 转list<Bitmap>，由单个线程转为并发线程处理，提高转化速度，同时得出结论：google提供的core3.3.3.jar二维码生成包，支持并发生成二维码图。
 
-已确认的问题：handler.postdelay不能倒计时。
+
+900KB数据 414条数据转化测试
+单线程耗时31s。
+并发2个线程耗时16s
+并发3个线程耗时13s
+并发4个线程耗时13s
+并发5个线程耗时16s，
+并发6个线程耗时16s,
+并发10个线程耗时16s,
+
+结论：**并发线程再多，耗时只能缩短一半。合理的线程数是2——4个。而且耗时都一样。**
