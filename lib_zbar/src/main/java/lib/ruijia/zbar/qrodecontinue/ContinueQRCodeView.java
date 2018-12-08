@@ -18,6 +18,9 @@ import android.widget.RelativeLayout;
 import lib.ruijia.zbar.R;
 import lib.ruijia.zbar.qrcodecore.BarcodeType;
 
+/**
+ * 相机+预览管理
+ */
 public abstract class ContinueQRCodeView extends RelativeLayout implements Camera.PreviewCallback {
     /**
      * 识别的最小延时，避免相机还未初始化完成
@@ -118,10 +121,13 @@ public abstract class ContinueQRCodeView extends RelativeLayout implements Camer
         Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
         for (int cameraId = 0; cameraId < Camera.getNumberOfCameras(); cameraId++) {
             Camera.getCameraInfo(cameraId, cameraInfo);
-            if (cameraInfo.facing == cameraFacing) {
-                startCameraById(cameraId);
-                break;
-            }
+            //TODO 方式1：zbar用于正常手机
+//            if (cameraInfo.facing == cameraFacing) {
+//                startCameraById(cameraId);
+//                break;
+//            }
+            //TODO 方式2： zbar用于特殊设备
+            startCameraById(cameraId);
         }
     }
 

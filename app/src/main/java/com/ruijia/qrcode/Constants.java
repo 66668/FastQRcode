@@ -5,10 +5,13 @@ package com.ruijia.qrcode;
  */
 public class Constants {
     /**
-     * 发送时间间隔 默认150
+     * 发送时间间隔
+     *
+     * 默认150
+     *
      */
     public static final String TIME_INTERVAL = "time_interval";
-    public static final int DEFAULT_TIME = 150;
+    public static final int DEFAULT_TIME = 500;
 
     /**
      * 最大文件大小 默认5M
@@ -17,9 +20,15 @@ public class Constants {
     public static final int DEFAULT_SIZE = 5;
 
     /**
+     * 字符流 截取长度
+     * <p>
      * zxing core 3.3.3 最大的传输容量2954,17长度做标记头和标记尾。2954-17=2937
+     *
+     * 最强性能长度 2938
+     *
+     *
      */
-    public static final int qrSize = 2938;
+    public static final int qrSize = 220;//
 
 
     /**

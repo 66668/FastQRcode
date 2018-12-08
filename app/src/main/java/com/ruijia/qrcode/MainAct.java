@@ -16,6 +16,7 @@ import android.os.Vibrator;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.WindowManager;
 import android.widget.ImageView;
 
 import com.ruijia.qrcode.listener.OnServiceAndActListener;
@@ -66,6 +67,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private List<String> sendDatas = new ArrayList<>();//发送端 数据
     private List<Bitmap> sendImgs = new ArrayList<>();//发送端 数据
     private List<Integer> sendBackList = new ArrayList<>();//发送端 返回缺失数据
+    //TODO 异常
     private List<Bitmap> sendImgsMore = new ArrayList<>();//缺失的数据； Bitmap样式
     private String sendFlePath;//发送端 文件路径
     private int sendSize = 0;//发送端 文件路径
@@ -538,7 +540,6 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                         //已处理
                         e.printStackTrace();
                     }
-
                 }
 
             }
@@ -576,6 +577,8 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        //屏幕常量
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.act_main);
         isFirst = true;
         initView();
@@ -678,6 +681,8 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         if (conn != null) {
             unbindService(conn);
         }
+        //屏幕常亮
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         super.onDestroy();
 
     }
