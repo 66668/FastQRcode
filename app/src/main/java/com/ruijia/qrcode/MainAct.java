@@ -597,6 +597,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         final int pos = Integer.parseInt(posStr);//位置 "0001234"-->1234
         if (recvStr.contains(recv_loss_all)) {//接收端数据全部丢失,发送端需要重新发送数据
             lastText = recvStr;
+            sendBackList = new ArrayList<>();
             for (int i = 0; i < sendImgs.size(); i++) {
                 sendBackList.add(i);
             }
@@ -605,6 +606,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
+                    sendBackList = new ArrayList<>();
                     lastText = recvStr;
                     vibrate();  //震动
                     //数据转成list,list保存位置信息
@@ -646,14 +648,17 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                 @Override
                 protected List<Bitmap> doInBackground(Void... voids) {
                     List<Bitmap> maps = new ArrayList<>();
-                    //利用位置信息，取bitmap
+                    //TODO 利用位置信息，取bitmap
                     for (int i = 0; i < sendBackList.size(); i++) {
+                        a:
                         for (int j = 0; j < sendImgs.size(); j++) {
                             if (sendBackList.get(i) == j) {
                                 maps.add(sendImgs.get(j));
+                                break a;
                             }
                         }
                     }
+                    Log.e("SJY", "sendMore:sendImgs=" + sendImgs.size() + "--sendBackList=" + sendBackList.size() + "--sendImgsMore=" + maps.size());
                     return maps;
                 }
 
@@ -780,7 +785,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                         public void run() {
                             try {
                                 //回调发送间隔，用于计算识别速度，也用于鉴别 发送间隔是否标准
-                                myService.sendAidlQrUnitTime((System.currentTimeMillis() - handler_lastTime), sendImgs.size(), sendCounts, "moreSend");
+                                myService.sendAidlQrUnitTime((System.currentTimeMillis() - handler_lastTime), sendImgsMore.size(), sendCounts, "moreSend");
                                 //
                                 img_result.setImageBitmap(sendImgsMore.get(sendCounts));
                                 sendCounts++;
