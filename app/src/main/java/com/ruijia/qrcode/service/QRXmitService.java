@@ -48,6 +48,7 @@ public class QRXmitService extends Service {
     private List<String> newDatas = new ArrayList<>();
     private List<Bitmap> maps = new ArrayList<>();
     private int size = 0;//当前文件的list长度
+    private long fileSize = 0;//文件大小
 
     /**
      * 客户端开启连接后，自动执行
@@ -243,6 +244,7 @@ public class QRXmitService extends Service {
                 super.onPostExecute(data);
                 //拿到文件的字符流
                 createArray(data);
+                fileSize = data.length();//字符流大小
             }
         }.execute();
 
@@ -343,8 +345,7 @@ public class QRXmitService extends Service {
                     return;
                 } else {
                     /**
-                     * TODO list集中转bitmap,可以将list分成多段，让子线程执行，缩短时间
-                     * 集中转qrbitmap
+                     * 集中转qrbitmap，测试发现，线程分成2个最佳，再多也没用
                      */
                     newDatas = list;
                     size = newDatas.size();
@@ -764,6 +765,7 @@ public class QRXmitService extends Service {
                         QrProgressCallback callback = mListener.getBroadcastItem(i);
                         //处理回调
                         callback.transTime(time, msg);
+                        callback.transComplete();
                         mListener.finishBroadcast();//成对出现2
                         // 解绑callback
 //                        mListener.unregister(callback);
@@ -787,12 +789,12 @@ public class QRXmitService extends Service {
 
     private void serviceStartAct() {
         if (checkActAlive() && isActFrontShow()) {
-            isTrans(true, "MainAct在运行");
+            isTrans(true, "MainAct在前台运行");
             //接口回调
             if (listener != null) {
-                listener.onQrsend(selectPath, newDatas, maps);
+                listener.onQrsend(selectPath, newDatas, maps, fileSize);
             } else {
-                isTrans(false, "listener==null");
+                isTrans(false, "链路层未启动，回调无法使用listener=null");
             }
 
         } else {
@@ -853,6 +855,13 @@ public class QRXmitService extends Service {
      * act的service连接完成后，通知service回调act
      */
     public void startServiceTrans() {
-        listener.onQrsend(selectPath, newDatas, maps);
+        serviceStartAct();
+        //
+        //接口回调
+//        if (listener != null) {
+//            listener.onQrsend(selectPath, newDatas, maps, fileSize);
+//        } else {
+//            isTrans(false, "链路层未启动，回调无法使用listener=null");
+//        }
     }
 }

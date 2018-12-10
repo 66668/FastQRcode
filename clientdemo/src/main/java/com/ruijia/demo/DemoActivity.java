@@ -20,8 +20,8 @@ import cn.qqtheme.framework.picker.FilePicker;
 public class DemoActivity extends BaseActivity implements View.OnClickListener {
     public static final String TAG = "SJY";
     //=================控件=================
-    private EditText et_timeInteral, et_maxSize,et_timeout;
-    private Button btn_select, btn_QRCtrl, btn_QRRecv, btn_QRSend, btn_bind, btn_unbind, btn_time_sure, btn_maxSize_sure,btn_timeout;
+    private EditText et_timeInteral, et_maxSize, et_timeout;
+    private Button btn_select, btn_QRCtrl, btn_QRRecv, btn_QRSend, btn_bind, btn_unbind, btn_time_sure, btn_maxSize_sure, btn_timeout;
     private TextView tv_path;
 
     //
@@ -93,7 +93,7 @@ public class DemoActivity extends BaseActivity implements View.OnClickListener {
                 et_maxSize.setHint("设置文件最大：" + maxSize + "M");
             }
 
-        }else if (v == btn_timeout) {
+        } else if (v == btn_timeout) {
             String str = et_timeout.getText().toString();
             if (TextUtils.isEmpty(str)) {
                 timeout = 15;
@@ -194,13 +194,19 @@ public class DemoActivity extends BaseActivity implements View.OnClickListener {
         }
     }
 
-    //-------------------------服务端回调-------------------------------
+    //-------------------------服务端（链路层）回调-------------------------------
 
     //01
     @Override
     void clientIsTrans(boolean isSuccess, String msg) {
         super.clientIsTrans(isSuccess, msg);
-        Log.d(TAG, "isTrans-isSuccess=" + isSuccess + "--msg=" + msg);
+        if (isSuccess) {
+            Log.d(TAG, "实时状态监听" + isSuccess + "--msg=" + msg);
+        } else {
+            //TODO 失败，必须处理
+            Log.e(TAG, "本次传输失败，必须要处理，失败原因：" + msg);
+        }
+
     }
 
     //02
@@ -252,13 +258,12 @@ public class DemoActivity extends BaseActivity implements View.OnClickListener {
         Log.d(TAG, "二维码发送进度：" + (100 * position / total) + "%--图片显示在界面的时长=" + time + "ms----msg=" + msg + "--position=" + position);
     }
 
-
-    //08
+    //08 信息都在msg中，time为文件总耗时
     @Override
     void clientTransTime(long time, String msg) {
         super.clientTransTime(time, msg);
         //传送完成 总耗时
-        Log.d(TAG, "transTime-time=" + time + "--msg=" + msg);
+        Log.d(TAG, msg);
     }
 
     //09
