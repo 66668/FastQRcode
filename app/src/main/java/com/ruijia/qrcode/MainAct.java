@@ -63,6 +63,16 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     //TODO  需要再优化，暂定
     private boolean isFirst = true;//是否走onCreate生命周期
     private Timer timer;//倒计时类
+
+    //===================发送端连接接收端测试 变量=====================
+    private String send_init = "QrcodeSENDCONNECTQrcodeSENDCONNECTQrcodeSENDCONNECTQrcodeSENDCONNECT";//发送端 发送连接信息，通知接收端初始化数据
+    private String recv_init = "QrcodeRECVCONNECTQrcodeRECVCONNECTQrcodeRECVCONNECTQrcodeRECVCONNECT";//接收端 发送连接信息，通知发送端发送数据
+    private long ininConnectTime;//测试接收端是否可用
+    private static final int TIMEOUT = 20;//连接超时
+    private int timeoutCount = 0;
+    private String recv_lastStr = null;
+    private boolean isRecvInit = false;
+
     //===================发送端操作=====================
     private List<String> sendDatas = new ArrayList<>();//发送端 数据
     private List<Bitmap> sendImgs = new ArrayList<>();//发送端 数据
@@ -72,12 +82,14 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private String sendFlePath;//发送端 文件路径
     private int sendSize = 0;//发送端 文件路径
     private int sendCounts = 0;//发送次数统计，handler发送使用
-    private boolean isSending = false;//代码成对出现，用于保护发送
+    private boolean isSending = false;//代码成对出现，用于保护第一次发送，当第一次发送结束，设置为false
     //时间设置
     private long handler_lastTime;//用于计算发送耗时+显示到界面的时长
     private long lastSaveTime;//用于计算发送耗时,
 
+
     //===================接收端操作=====================
+    //TODO 容易出问题，每次传文件都需要清除数据
     private Map<Integer, String> receveContentMap = new HashMap<>();//接收的数据暂时保存到map中，最终保存到receiveDatas
     private List<String> receiveContentDatas = new ArrayList<>();//文件内容存储
     private List<Integer> feedBackFlagList = new ArrayList<>();//缺失标记list,用于拼接数据
@@ -122,6 +134,26 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         }
         long startTime = System.currentTimeMillis();
 
+        //======初始化连接=======
+
+        //接收端：发送端发送初始化信息 接收端初始化使用
+        if (resultStr.contains(send_init)) {
+            //初始化
+            initRecvConnect(resultStr);
+            lastText = resultStr;
+        }
+
+        //发送端：接收端发送初始化信息，发送端接收后发送数据
+        if (resultStr.contains(recv_init)) {
+            if (!isSending) {
+                //第一次发送数据
+                startSend();
+                //第一次发送结束后，设置为false
+                isSending = true;
+            }
+        }
+
+        //======数据传输结束=======
         //接收端，收到结束标记，处理接收端的数据
         if (resultStr.contains(sendOver_Contnet)) {
             RecvTerminalOver(resultStr);
@@ -133,6 +165,8 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             senTerminalOver(resultStr);
             return;
         }
+
+        //======数据传输中=======
         /**
          *（二）解析传输内容，文件的内容，将数据保存在map中
          */
@@ -144,6 +178,11 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         final String result = resultStr.substring(10, (resultStr.length() - 4));
         if (flagStr.contains("snd")) {//发送端发送的数据
             //接收端
+
+            //必要的参数修改 清空初始化连接
+            recv_lastStr = null;
+            handler.removeCallbacks(initRecvTimeoutTask);//本想boolean判断，但是麻烦，就实时清除吧。
+            //
             RecvTerminalScan(startTime, flagStr, endFlag, result);
         } else if (flagStr.contains("rcv")) {
             //发送端
@@ -159,15 +198,88 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         Log.e("SJY", "QRCodeView.Delegate--ScanQRCodeOpenCameraError()");
     }
 
-//========================================================================================
-//=====================================接收端处理==========================================
-//========================================================================================
+    //========================================================================================
+    //=====================================接收端处理==========================================
+    //========================================================================================
+
+    private void clearRecvParams() {
+        //
+        clearInitConnect();
+        //
+        receveContentMap = new HashMap<>();//接收的数据暂时保存到map中，最终保存到receiveDatas
+        receiveContentDatas = new ArrayList<>();//文件内容存储
+        feedBackFlagList = new ArrayList<>();//缺失标记list,用于拼接数据
+        feedBackBuffer = new StringBuffer();  //统计结果
+        feedBackDatas = new ArrayList<>();//接收端处理结果，反馈list
+        feedBackImgs = new ArrayList<>();//接收端处理结果，反馈list
+        recvFlePath = null;//接收端 文件路径
+        receveSize = 0;//接收端 标记 总数据长度
+        recvCounts = 0;//发送次数统计，handler发送使用
+    }
+
+    /**
+     * 异步倒计时，处理接收端 脏数据倒计时清理，如果不是脏数据了/倒计时结束了
+     * 关闭该异步的判断是 接收端接收数据/倒计时结束
+     * <p>
+     * 问题：
+     * 如果接收端数据接收中，突然触发该方法，不会造成数据损坏，不影响数据接收
+     */
+    Runnable initRecvTimeoutTask = new Runnable() {
+        @Override
+        public void run() {
+            if (timeoutCount > TIMEOUT) {
+                //该种情况，链路层传输失败。
+                //清空脏数据
+                img_result.setImageBitmap(null);
+                clearRecvParams();
+                //结束倒计时
+                handler.removeCallbacks(this);
+            } else {
+                //倒计时
+                timeoutCount++;
+                handler.postDelayed(this, 950);
+            }
+
+        }
+    };
+
+    /**
+     * 接收端初始化
+     * <p>
+     * 发送端发送初始化信息，接收端接收后，初始化信息，并返回结果。
+     * <p>
+     * 需要做倒计时处理，如果接收端数据反馈不到发送端，以后接收端就无法再使用。
+     * <p>
+     * 所以清除该参数有两处，倒计时超时处，和数据识别处，
+     * <p>
+     * 倒计时处使用，说明链路层连接失败，
+     * <p>
+     * 数据识别处，说明链路正常连接（需要修改recv_lastStr+结束倒计时）
+     * <p>
+     */
+
+    private void initRecvConnect(String result) {
+        if (TextUtils.isEmpty(recv_lastStr) || !result.equals(recv_lastStr)) {
+            //初始化接收端数据
+            clearRecvParams();
+            //发送信息，通知发送端，可以发送数据了
+            showBitmap(recv_init);
+            //该参数需要在适当位置清空，否则出问题。
+            recv_lastStr = result;
+
+            //处理可能成为脏数据的情况
+            timeoutCount = 0;
+            handler.removeCallbacks(initRecvTimeoutTask);
+            handler.post(initRecvTimeoutTask);
+        }
+    }
 
     /**
      * 接收端数据处理（实时扫描结果）
      * 相当于另一个手机的app,不会处理myService
      */
     private void RecvTerminalScan(final long startTime, String startTags, String endTags, final String recvStr) {
+
         String[] flagArray = startTags.split("d");
         //继续排除乱码
         if ((flagArray.length != 2) || (!endTags.equals(endTag))) {
@@ -191,6 +303,10 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     /**
      * 接收端 识别结束处理（实时扫描结果）
      * 数据拼接类型：QrcodeContentSendOver+文件路径+7位的文件大小
+     * <p>
+     * 这里需要讨论情况：
+     * （1）接收端只拿到该结束标记，则receveContentMap对象没有值，识别流程失败
+     * （2）接收端拿到部分（或全部数据）识别数据+结束标记，则符合设计要求
      */
     private void RecvTerminalOver(String resultStr) {
         //处理标记
@@ -198,14 +314,17 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             //再一次过滤，保证拿到结束标记 只处理一次
             return;
         }
-        //注意该标记需要清除，否则容易出问题，清除时间在发送二维码处
+        //注意该标记需要清除，否则容易出问题，清除时间在：接收端发送二维码处
         lastRecvOver = resultStr;
+
+        //提取结束端信息：路径+数据长度，用于判断接收端数据是否接收全，否则就通知发送端再次发送缺失数据。
         String pathAndPos = resultStr.substring(sendOver_Contnet.length(), resultStr.length());
         String positionStr = pathAndPos.substring((pathAndPos.length() - 7), pathAndPos.length());
         //拿到发送端的数据大小
         receveSize = Integer.parseInt(positionStr);
         //拿到发送端文件类型
         recvFlePath = pathAndPos.substring(0, (pathAndPos.length() - 7));
+
         //处理是否有缺失文件。
         handler.removeCallbacks(recvTerminalOverTask);
         handler.post(recvTerminalOverTask);
@@ -281,6 +400,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private void recvTerminalBackSend() {
         //需要清除 lastRecvOver标记，否则，二次+接收端收不到结束处理标记
         lastRecvOver = "";
+        //
         recvCounts = 0;
 
         //开启倒计时
@@ -359,6 +479,53 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
 //=======================================================================================
 //=====================================发送端处理==========================================
 //=======================================================================================
+
+    /**
+     * 连接测试清空
+     */
+    private void clearInitConnect() {
+        ininConnectTime = 0;
+        timeoutCount = 0;
+        recv_lastStr = null;
+    }
+
+    /**
+     * 发送端数据清空
+     */
+    private void clearSendParams() {
+        clearInitConnect();
+        sendDatas = new ArrayList<>();//发送端 数据
+        sendImgs = new ArrayList<>();//发送端 数据
+        sendBackList = new ArrayList<>();//发送端 返回缺失数据
+        sendImgsMore = new ArrayList<>();//缺失的数据； Bitmap样式
+        sendFlePath = null;//发送端 文件路径
+        sendSize = 0;//发送端 文件路径
+        sendCounts = 0;//发送次数统计，handler发送使用
+        isSending = false;//代码成对出现，用于保护发送
+        //时间设置
+        handler_lastTime = 0;//用于计算发送耗时+显示到界面的时长
+        lastSaveTime = 0;//用于计算发送耗时,
+    }
+
+    /**
+     * 发送端向接收端发送连接测试，连接通了，则发送数据，连接不通，则回调 连接失败
+     */
+    Runnable initSendConnectTask = new Runnable() {
+        @Override
+        public void run() {
+            if (timeoutCount < TIMEOUT) {
+                timeoutCount++;
+                handler.postDelayed(this, 950);
+            } else {//连接超时
+                //清除图片
+                img_result.setImageBitmap(null);
+                //清除发送端所有数据
+                clearSendParams();
+                //回调
+                myService.isTrans(false, "连接接收端设备失败，连接超时:" + TIMEOUT + "S");
+            }
+        }
+    };
 
     /**
      * 发送端 接收数据处理（实时扫描结果）
@@ -441,9 +608,31 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     }
 
     /**
-     * 第一次发送二维码
+     * 发送前的连接初始化，用于测试是否可以使用链路层，同时通知接收端，初始化参数。
+     * <p>
+     * 如果接收端接收到数据，则反馈给发送端可以发送数据，则触发发送。
+     * <p>
+     * 倒计时连接，如果连接超时，则连接失败，回调通知失败
      */
+    private void initSendConnect() {
+        //
 
+        //初始化
+        ininConnectTime = System.currentTimeMillis();
+        timeoutCount = 0;
+        showBitmap(send_init);
+        //触发异步
+        handler.removeCallbacks(initSendConnectTask);
+        handler.post(initSendConnectTask);
+
+    }
+
+
+    /**
+     * 发送端 发送数据
+     * <p>
+     * 第一次发送
+     */
     private void startSend() {
         Log.d("SJY", "发送端发送二维码");
         //保存当前时间节点。
@@ -451,6 +640,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         lastSaveTime = System.currentTimeMillis();
         SPUtil.putLong(Constants.START_SEND_TIME, handler_lastTime);
         sendCounts = 0;
+        img_result.setImageBitmap(null);
         //开启倒计时
         if (timer != null) {
             timer.cancel();
@@ -472,11 +662,16 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                             sendCounts++;
 
                         } else {
+                            //第一次发送结束后，设置为false
+                            isSending = false;
+
                             //发送结束标记，结束标记为：QrcodeContentSendOver+文件路径+文件大小（7位数）
                             try {
                                 final String sizeStr = ConvertUtils.int2String(sendSize);
 
+                                //数据发送结束，发送数据配置信息：文件路径+图片尺寸
                                 showBitmap(sendOver_Contnet + sendFlePath + sizeStr);
+                                //结束倒计时
                                 timer.cancel();
 
                             } catch (Exception e) {
@@ -494,7 +689,9 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     }
 
     /**
-     * 发送二维码（二次+发送）
+     * 发送端 发送数据
+     * <p>
+     * 二次+发送
      */
     private void startSendMore() {
         sendCounts = 0;
@@ -732,7 +929,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                     sendImgs != null && sendImgs.size() > 0 && (!TextUtils.isEmpty(sendFlePath)) &&
                     sendSize > 0) {
                 //发送数据
-                startSend();
+                initSendConnect();
             } else {
                 myService.isTrans(false, "myListener获取到空数据，无法发送");
             }

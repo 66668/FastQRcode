@@ -31,6 +31,7 @@ public class BaseActivity extends AppCompatActivity {
     public String selectPath = null;//文件路径
     public int timeInterval = 150;//发送间隔
     public int maxSize = 5;//最大文件5M
+    public int timeout = 15;//链路超时判断 默认15s
 
     //回调
     public QrProgressCallback callback = new QrProgressCallback.Stub() {

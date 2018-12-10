@@ -129,9 +129,14 @@ public class QRXmitService extends Service {
      */
     public boolean srvQRCtrl(int timeInterval, int fileSize) {
         Log.d(TAG, "服务端设置参数-QRCtrl--timeInterval=" + timeInterval + "--fileSize=" + fileSize);
+
         SPUtil.putInt(Constants.TIME_INTERVAL, timeInterval);
         SPUtil.putInt(Constants.FILE_SIZE, fileSize);
-        return (SPUtil.getInt(Constants.TIME_INTERVAL, 0) != 0) && (SPUtil.getInt(Constants.TIME_INTERVAL, 0) != 0);
+        SPUtil.putInt(Constants.CON_TIME_OUT, 15);
+
+        return (SPUtil.getInt(Constants.TIME_INTERVAL, 0) != 0
+                && SPUtil.getInt(Constants.TIME_INTERVAL, 0) != 0
+                && SPUtil.getInt(Constants.CON_TIME_OUT, 0) != 0);
     }
 
     /**
@@ -352,13 +357,13 @@ public class QRXmitService extends Service {
 
 //                    方式2:
                     try {
-                        if (size < 50) {
+                        if (size < 50) {//150KB
                             createQrBitmap2(newDatas, 1);
-                        } else if (size < 100) {
+                        } else if (size < 100) {//300KB
                             createQrBitmap2(newDatas, 2);
-                        } else if (size < 500) {
+                        } else if (size < 500) {//1.5M左右
                             createQrBitmap2(newDatas, 3);
-                        } else {
+                        } else {//大于1.5M
                             createQrBitmap2(newDatas, 4);
                         }
                         //测试ArrayList的非线程安全

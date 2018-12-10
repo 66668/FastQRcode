@@ -20,8 +20,8 @@ import cn.qqtheme.framework.picker.FilePicker;
 public class DemoActivity extends BaseActivity implements View.OnClickListener {
     public static final String TAG = "SJY";
     //=================控件=================
-    private EditText et_timeInteral, et_maxSize;
-    private Button btn_select, btn_QRCtrl, btn_QRRecv, btn_QRSend, btn_bind, btn_unbind, btn_time_sure, btn_maxSize_sure;
+    private EditText et_timeInteral, et_maxSize,et_timeout;
+    private Button btn_select, btn_QRCtrl, btn_QRRecv, btn_QRSend, btn_bind, btn_unbind, btn_time_sure, btn_maxSize_sure,btn_timeout;
     private TextView tv_path;
 
     //
@@ -39,8 +39,10 @@ public class DemoActivity extends BaseActivity implements View.OnClickListener {
 
         et_timeInteral = findViewById(R.id.et_timeInteral);
         et_maxSize = findViewById(R.id.et_maxSize);
+        et_timeout = findViewById(R.id.et_timeout);
         tv_path = findViewById(R.id.tv_path);
         btn_maxSize_sure = findViewById(R.id.btn_maxSize_sure);
+        btn_timeout = findViewById(R.id.btn_timeout);
         btn_time_sure = findViewById(R.id.btn_time_sure);
         btn_bind = findViewById(R.id.btn_bind);
         btn_unbind = findViewById(R.id.btn_unbind);
@@ -49,6 +51,7 @@ public class DemoActivity extends BaseActivity implements View.OnClickListener {
         btn_QRRecv = findViewById(R.id.btn_QRRecv);
         btn_QRSend = findViewById(R.id.btn_QRSend);
         btn_maxSize_sure.setOnClickListener(this);
+        btn_timeout.setOnClickListener(this);
         btn_time_sure.setOnClickListener(this);
         tv_path.setOnClickListener(this);
         btn_bind.setOnClickListener(this);
@@ -88,6 +91,18 @@ public class DemoActivity extends BaseActivity implements View.OnClickListener {
                 maxSize = Integer.parseInt(str);
                 et_maxSize.setText("");
                 et_maxSize.setHint("设置文件最大：" + maxSize + "M");
+            }
+
+        }else if (v == btn_timeout) {
+            String str = et_timeout.getText().toString();
+            if (TextUtils.isEmpty(str)) {
+                timeout = 15;
+                et_maxSize.setText("");
+                et_maxSize.setHint("超时判断：默认" + timeout + "s");
+            } else {
+                timeout = Integer.parseInt(str);
+                et_maxSize.setText("");
+                et_maxSize.setHint("超时判断：默认" + timeout + "s");
             }
 
         } else if (v == btn_QRCtrl) {
@@ -141,6 +156,9 @@ public class DemoActivity extends BaseActivity implements View.OnClickListener {
         try {
             //调用服务端接口
             ibinder.QrCtrl(timeInterval, maxSize);
+            //TODO
+//            ibinder.QrCtrl(timeInterval, maxSize,timeout);
+
         } catch (RemoteException e) {
             //异常
             e.printStackTrace();

@@ -125,6 +125,31 @@
 
             </LinearLayout>
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="3"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/et_timeout"
+                    android:layout_width="0dp"
+                    android:layout_height="50dp"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:hint="超时判断：默认15s"
+                    android:inputType="number"
+                    android:textSize="10sp" />
+
+                <Button
+                    android:id="@+id/btn_timeout"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="确定" />
+
+            </LinearLayout>
+
             <Button
                 android:id="@+id/btn_QRCtrl"
                 android:layout_width="match_parent"
@@ -142,7 +167,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
-                android:text="步骤三:发送传输文件" />
+                android:text="步骤三:发送传输文件(点击的最小时间间隔15s,此处就不限制了，15s为链路连接超时判断)" />
 
 
             <Button
