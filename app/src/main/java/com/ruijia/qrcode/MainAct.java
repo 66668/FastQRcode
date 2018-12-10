@@ -89,6 +89,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private int sendSize = 0;//发送端 文件路径
     private int sendCounts = 0;//发送次数统计，handler发送使用
     private boolean isSending = false;//代码成对出现，用于保护第一次发送，当第一次发送结束，设置为false
+    private boolean isMoreSending = false;//成对出现，用于保护二次+发送，发送结束后，就设置为false
     //时间设置
     private long handler_lastTime;//用于计算发送耗时+显示到界面的时长
     private long lastSaveTime;//用于计算发送耗时,

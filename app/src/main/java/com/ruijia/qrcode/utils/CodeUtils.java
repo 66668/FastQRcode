@@ -28,7 +28,7 @@ public class CodeUtils {
      * @return
      */
     public static Bitmap createByMultiFormatWriter(String content, int size) {
-        if(content==null||TextUtils.isEmpty(content)){
+        if(content==null||TextUtils.isEmpty(content)||content.length()>2952){
             return null;
         }
         Hashtable<EncodeHintType, Object> hints = new Hashtable<EncodeHintType, Object>();
