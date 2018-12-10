@@ -135,7 +135,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
          */
         //结果相同不处理
         if (TextUtils.isEmpty(resultStr) || resultStr.length() < 14 || resultStr.equals(lastText)) {
-            Log.d("SJY", "重复扫描");
+            Log.d("AAA", "重复扫描");
             return;
         }
         long startTime = System.currentTimeMillis();
@@ -157,6 +157,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                 //第一次发送结束后，设置为false
                 isSending = true;
             }
+            lastText = resultStr;
         }
 
         //======数据传输结束=======
@@ -671,7 +672,9 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
      * <p>
      * 如果接收端接收到数据，则反馈给发送端可以发送数据，则触发发送。
      * <p>
-     * 倒计时连接，如果连接超时，则连接失败，回调通知失败
+     * <p>
+     * 如果连接超时，则连接失败，倒计时关闭连接，回调通知失败
+     * 如果连接通了，则在startSend处结束此异步
      */
     private void initSendConnect() {
         //
@@ -693,7 +696,8 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
      * 第一次发送
      */
     private void startSend() {
-        Log.d("SJY", "发送端发送二维码");
+        //结束初始化连接
+        handler.removeCallbacks(initSendConnectTask);
         //保存当前时间节点。
         handler_lastTime = System.currentTimeMillis();
         lastSaveTime = System.currentTimeMillis();
@@ -732,6 +736,9 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                                 showBitmap(sendOver_Contnet + sendFlePath + sizeStr);
                                 //结束倒计时
                                 timer.cancel();
+                                //TODO 如果对焦不好，接收端收不到数据
+                                //开启倒计时监听，如果超过（时间间隔*片段数）ms，则接收端接收数据失败，通知发送端其他操作
+//                                handler.post();
 
                             } catch (Exception e) {
                                 //已处理
@@ -1024,7 +1031,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private OnServiceAndActListener myListener = new OnServiceAndActListener() {
         @Override
         public void onQrsend(String path, List<String> newData, List<Bitmap> maps, long fileSize) {
-            Log.d("SJY", "onQrsend监听触发发送按钮");
+            Log.d("SJY", "onQrsend监听 发送");
             //清空发送端数据，保证本次数据不受上一次影响
             initSendParams();
             //赋值
@@ -1104,14 +1111,16 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    if (showTimerCount < 2) {//显示2s结束显示
+                                    if (showTimerCount < 4) {// TODO 显示2s结束显示
                                         img_result.setImageBitmap(bitmap);
                                         showTimerCount++;
                                     } else {
                                         //
                                         img_result.setImageBitmap(null);
-                                        showTimer.cancel();
-                                        showTimer = null;
+                                        if (showTimer != null) {
+                                            showTimer.cancel();
+                                            showTimer = null;
+                                        }
                                     }
                                 }
                             });

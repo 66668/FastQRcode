@@ -855,13 +855,12 @@ public class QRXmitService extends Service {
      * act的service连接完成后，通知service回调act
      */
     public void startServiceTrans() {
-        serviceStartAct();
         //
         //接口回调
-//        if (listener != null) {
-//            listener.onQrsend(selectPath, newDatas, maps, fileSize);
-//        } else {
-//            isTrans(false, "链路层未启动，回调无法使用listener=null");
-//        }
+        if (listener != null) {
+            listener.onQrsend(selectPath, newDatas, maps, fileSize);
+        } else {
+            isTrans(false, "链路层未启动，回调无法使用listener=null");
+        }
     }
 }
