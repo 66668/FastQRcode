@@ -54,7 +54,7 @@ public class IOUtils {
             return filepath;
         } catch (Exception e) {
             e.printStackTrace();
-            Log.e("SJY", "base64ToFile异常：" + e.toString());
+            Log.e("SJY", "文件路径filepath="+filepath+"base64ToFile异常：" + e.toString());
             return null;
         }
     }
