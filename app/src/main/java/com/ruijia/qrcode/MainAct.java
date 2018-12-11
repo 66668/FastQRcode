@@ -251,7 +251,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                 handler.removeCallbacks(this);
                 //连接超时
                 //回调
-                myService.isTrans(false, "连接接收端设备失败，连接超时:" + TIMEOUT + "S");
+                myService.isTrans(false, "通讯意外中断，有一端无法识别二维码，超时" + TIMEOUT + "S");
                 //不需要清空数据，万一起死回生，清空容易bug
             }
         }
