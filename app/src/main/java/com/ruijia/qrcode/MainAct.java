@@ -448,9 +448,10 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        Log.d(RECV_TAG, "接收端：数据没有缺失");
+
                         //没有缺失，直接结束
                         if (feedBackImgs == null || feedBackImgs.size() <= 0) {
+                            Log.d(RECV_TAG, "接收端：数据没有缺失");
                             //发送结束标记，结束标记为：QrCodeContentReceiveOver
                             showBitmap(receiveOver_Content + SUCCESS, 1500);
                             if (timer != null) {
