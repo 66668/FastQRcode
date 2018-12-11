@@ -1247,7 +1247,6 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                                         img_result.setImageBitmap(bitmap);
                                         showTimerCount++;
                                     } else {
-                                        //TODO 接收端不用，需要修改
                                         updateConnectListener();//耗时完成，添加监听
                                         img_result.setImageBitmap(null);
                                         if (showTimer != null) {
@@ -1300,8 +1299,6 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                                         img_result.setImageBitmap(bitmap);
                                         showTimerCount++;
                                     } else {
-                                        //TODO 接收端不用，需要修改
-                                        updateConnectListener();//耗时完成，添加监听
                                         img_result.setImageBitmap(null);
                                         if (showTimer != null) {
                                             showTimer.cancel();
