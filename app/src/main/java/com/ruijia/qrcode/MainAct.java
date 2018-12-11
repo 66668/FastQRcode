@@ -68,6 +68,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private String lastRecvOver = "";//接收端使用的标记
     private String lastSendOver = "";//发送端使用的标记
     private Timer timer;//倒计时类
+
     //=====单独显示bitmap的倒计时参数=====
     private Timer showTimer;//倒计时类
     private int showTimerCount = 0;//
@@ -79,8 +80,8 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private static final int CONNECT_TIMEOUT = 30;//通讯超时
     private int timeoutCount = 0;//初始化倒计时使用
     private int connectCount = 0;//链路通讯中 倒计时使用
+    private int SendMoreCount = 0;//如果某个二维码不识别，发送再多也没用，到达20次,强制关闭通讯
     private String recv_lastStr = null;
-    private boolean isRecvInit = false;
 
     //===================发送端操作=====================
     //==发送数据信息==
@@ -630,6 +631,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
      * 连接测试清空
      */
     private void clearInitConnect() {
+        SendMoreCount = 0;
         timeoutCount = 0;
         recv_lastStr = null;
     }
@@ -638,6 +640,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
      * 发送端数据清空
      */
     private void clearSendParams() {
+        SendMoreCount = 0;
         clearInitConnect();
         sendDatas = new ArrayList<>();//发送端 数据
         sendImgs = new ArrayList<>();//发送端 数据
@@ -807,6 +810,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         lastSaveTime = System.currentTimeMillis();
         SPUtil.putLong(Constants.START_SEND_TIME, handler_lastTime);
         sendCounts = 0;
+        SendMoreCount = 0;
         img_result.setImageBitmap(null);
         //开启倒计时
         if (timer != null) {
@@ -864,84 +868,92 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
      * 二次+发送
      */
     private void startSendMore() {
-        removeConnectListener();//发送耗时，需要解除监听
-        Log.d(SEND_TAG, " 二次+发送");
-        sendCounts = 0;
-        lastSendOver = "";//清除，否则该方法不再出发。
-        //此处不保存时间节点，因为统计用不到
-        handler_lastTime = System.currentTimeMillis();
-        //开启倒计时
-        if (timer != null) {
-            timer.cancel();
-            timer = null;
-        }
-        timer = new Timer();
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                if (sendImgsMore.size() > 0 && sendCounts < sendImgsMore.size()) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                //回调发送间隔，用于计算识别速度，也用于鉴别 发送间隔是否标准
-                                myService.sendAidlQrUnitTime((System.currentTimeMillis() - handler_lastTime), sendImgsMore.size(), sendCounts, "moreSend");
-                                //
-                                img_result.setImageBitmap(sendImgsMore.get(sendCounts));
-                                sendCounts++;
-                                handler_lastTime = System.currentTimeMillis();
-                            } catch (Exception e) {
-                                //数组越界异常处理
-                                //同下
-                                //发送结束标记，结束标记为：QrcodeContentSendOver+文件路径+文件大小（7位数）
-                                try {
-                                    final String sizeStr = ConvertUtils.int2String(sendSize);
-                                    //终止倒计时
-                                    runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            showSendBitmap(sendOver_Contnet + sendFlePath + sizeStr);
-                                            timer.cancel();
-                                            //TODO 是否清除本次参数
+        //判断是否超过次数，超过此数则此次传输失败
+        if (SendMoreCount < TIMEOUT) {
+            SendMoreCount++;
 
-                                        }
-                                    });
-
-                                } catch (Exception e1) {
-                                    //已处理
-                                    e1.printStackTrace();
-                                }
-
-                            }
-
-                        }
-                    });
-
-                } else {
-                    //同上catch
-                    //发送结束标记，结束标记为：QrcodeContentSendOver+文件路径+文件大小（7位数）
-                    try {
-                        final String sizeStr = ConvertUtils.int2String(sendSize);
-                        //终止倒计时
+            removeConnectListener();//发送耗时，需要解除监听
+            Log.d(SEND_TAG, " 二次+发送");
+            sendCounts = 0;
+            lastSendOver = "";//清除，否则该方法不再出发。
+            //此处不保存时间节点，因为统计用不到
+            handler_lastTime = System.currentTimeMillis();
+            //开启倒计时
+            if (timer != null) {
+                timer.cancel();
+                timer = null;
+            }
+            timer = new Timer();
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    if (sendImgsMore.size() > 0 && sendCounts < sendImgsMore.size()) {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                showSendBitmap(sendOver_Contnet + sendFlePath + sizeStr);
-                                timer.cancel();
-                                //TODO 是否清除本次参数
+                                try {
+                                    //回调发送间隔，用于计算识别速度，也用于鉴别 发送间隔是否标准
+                                    myService.sendAidlQrUnitTime((System.currentTimeMillis() - handler_lastTime), sendImgsMore.size(), sendCounts, "moreSend");
+                                    //
+                                    img_result.setImageBitmap(sendImgsMore.get(sendCounts));
+                                    sendCounts++;
+                                    handler_lastTime = System.currentTimeMillis();
+                                } catch (Exception e) {
+                                    //数组越界异常处理
+                                    //同下
+                                    //发送结束标记，结束标记为：QrcodeContentSendOver+文件路径+文件大小（7位数）
+                                    try {
+                                        final String sizeStr = ConvertUtils.int2String(sendSize);
+                                        //终止倒计时
+                                        runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                showSendBitmap(sendOver_Contnet + sendFlePath + sizeStr);
+                                                timer.cancel();
+                                                //TODO 是否清除本次参数
+
+                                            }
+                                        });
+
+                                    } catch (Exception e1) {
+                                        //已处理
+                                        e1.printStackTrace();
+                                    }
+
+                                }
 
                             }
                         });
 
-                    } catch (Exception e) {
-                        //已处理
-                        e.printStackTrace();
+                    } else {
+                        //同上catch
+                        //发送结束标记，结束标记为：QrcodeContentSendOver+文件路径+文件大小（7位数）
+                        try {
+                            final String sizeStr = ConvertUtils.int2String(sendSize);
+                            //终止倒计时
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    showSendBitmap(sendOver_Contnet + sendFlePath + sizeStr);
+                                    timer.cancel();
+                                    //TODO 是否清除本次参数
+
+                                }
+                            });
+
+                        } catch (Exception e) {
+                            //已处理
+                            e.printStackTrace();
+                        }
                     }
+
                 }
+            }, 100, PSOTDELAY_TIME_SEND);
+        } else {
+            myService.isTrans(false,"缺失数据无法补全，传输文件失败");
+            clearSendParams();
 
-            }
-        }, 100, PSOTDELAY_TIME_SEND);
-
+        }
     }
 
     /**
