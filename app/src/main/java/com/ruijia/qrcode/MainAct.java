@@ -238,7 +238,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     }
 
     /**
-     * 原理：每次识别出结果，更新该异步，如果识别不出扫描，倒计时20s,超过20s则链路层连接失败
+     * 原理：每次识别出结果，更新该异步，如果发送端识别不出二维码，倒计时20s,超过20s则链路层连接失败
      */
     private Runnable updateConnectTask = new Runnable() {
         @Override
