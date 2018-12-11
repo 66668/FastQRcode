@@ -43,6 +43,7 @@ import lib.ruijia.zbar.qrodecontinue.ContinueQRCodeView;
  * 开启MainAct识别功能有两种方式，1：若MainAct没启动，使用service的serviceStartAct()方法启动 2：若MainAct已在前端显示，service使用接口回调启动
  */
 public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
+    private static final String SCAN_TAG = "scan";
     private static final String RECV_TAG = "recv";
     private static final String SEND_TAG = "send";
     private static final String TAG = "SJY";
@@ -133,13 +134,13 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     //QRCodeView.Delegate
     @Override
     public void onScanQRCodeSuccess(String resultStr) {
-        Log.d("AAA", resultStr);
+        Log.d(SCAN_TAG, resultStr);
         /**
          *  （一）数据过滤,包括 重复结果，接收端识别完成，发送端识别完成。
          */
         //结果相同不处理
         if (TextUtils.isEmpty(resultStr) || resultStr.length() < 14 || resultStr.equals(lastText)) {
-            Log.d("AAA", "重复扫描");
+            Log.d(SCAN_TAG, "重复扫描");
             return;
         }
         long startTime = System.currentTimeMillis();
