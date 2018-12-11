@@ -61,7 +61,8 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private String sendOver_Contnet = "QrcodeContentSendOver";//发送端 所有数据一次发送完成，发送结束标记
     private String receiveOver_Content = "QrCodeContentReceiveOver";//接收端 完全收到数据，发送结束标记
     private String recv_loss_all = "QrCodeReceiveLossAll";//接收端 丢失全部数据
-    private String SUCCESS = "Success";//识别成功结束标记，和sendOver_Contnet和receiveOver_Content拼接使用
+    private String SUCCESS = "Success";//传输成功结束标记，和sendOver_Contnet和receiveOver_Content拼接使用
+    private String FAILED = "Failed";//传输失败结束标记，和sendOver_Contnet和receiveOver_Content拼接使用
     private String endTag = "RJQR";
     private String lastText;//
     private String lastRecvOver = "";//接收端使用的标记
@@ -476,8 +477,19 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
 
     /**
      * 接收端 发送反馈二维码数据
+     * <p>
+     * boolean 用于保存文件判断，如果保存文件失败，则返回false,默认为true
      */
     private void recvTerminalBackSend() {
+        recvTerminalBackSend(true);
+    }
+
+    /**
+     * 接收端 发送反馈二维码数据
+     *
+     * @param isSave 用于保存文件判断，如果保存文件失败，则返回false,默认为true
+     */
+    private void recvTerminalBackSend(final boolean isSave) {
         //需要清除 lastRecvOver标记，否则，二次+接收端收不到结束处理标记
         lastRecvOver = "";//已清除
         //
@@ -501,7 +513,12 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                         if (feedBackImgs == null || feedBackImgs.size() <= 0) {
                             Log.d(RECV_TAG, "接收端：数据没有缺失");
                             //发送结束标记，结束标记为：QrCodeContentReceiveOver
-                            showBitmap(receiveOver_Content + SUCCESS, 1500);
+                            if (isSave) {
+                                showBitmap(receiveOver_Content + SUCCESS, 1500);
+                            } else {
+                                showBitmap(receiveOver_Content + FAILED, 1500);
+                            }
+
                             if (timer != null) {
                                 timer.cancel();
                                 timer = null;
@@ -578,20 +595,28 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         Log.d(RECV_TAG, "接收端：保存文件后，反馈信息");
         //发送结束二维码
         feedBackImgs = new ArrayList<>();
-        recvTerminalBackSend();
+        if (strPath == null || TextUtils.isEmpty(strPath)) {
+            //保存文件失败
+            recvTerminalBackSend(false);
+        } else {
+            //保存文件成功
+            recvTerminalBackSend();
 
-        //aidl 与测试b通讯
-        try {
-            if (fileBinder != null) {
-                fileBinder.QRRecv(strPath);
-            } else {
-                Log.e(TAG, "测试B端app进程间通讯失败");
-                //TODO 重新开启
+            //aidl 与测试b通讯
+            try {
+                if (fileBinder != null) {
+                    fileBinder.QRRecv(strPath);
+                } else {
+                    Log.e(TAG, "测试B端app进程间通讯失败");
+                    //TODO 重新开启
+                }
+
+            } catch (RemoteException e) {
+                e.printStackTrace();
             }
-
-        } catch (RemoteException e) {
-            e.printStackTrace();
         }
+
+
         //清空数据
         clearRecvParams();
     }
@@ -706,10 +731,16 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         //注意该标记需要清除，否则容易出问题，清除时间在发送二维码处
         lastSendOver = resultStr;
 
-        //格式:QrCodeContentReceiveOverSuccess,文件传输完成，回调aidl。
+        //格式:QrCodeContentReceiveOverSuccess/QrCodeContentReceiveOverFailed
+        // 文件传输完成，回调aidl。
         if (resultStr.length() > receiveOver_Content.length()) {
-            Log.d(SEND_TAG, "接收端文件传输完成");
-            sendComplete();
+            if (resultStr.contains(FAILED)) {
+                myService.isTrans(false, "接收端保存文件异常，传输失败");
+            } else {
+                Log.d(SEND_TAG, "接收端文件传输完成");
+                sendComplete();
+            }
+
             //格式是QrCodeContentReceiveOver
         } else {
             Log.d(SEND_TAG, "查找缺失数据并拼接");
@@ -1190,7 +1221,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                                         img_result.setImageBitmap(bitmap);
                                         showTimerCount++;
                                     } else {
-                                        //
+                                        //TODO 接收端不用，需要修改
                                         updateConnectListener();//耗时完成，添加监听
                                         img_result.setImageBitmap(null);
                                         if (showTimer != null) {
