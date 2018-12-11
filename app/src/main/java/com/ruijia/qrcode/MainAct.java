@@ -275,7 +275,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             //初始化接收端数据
             clearRecvParams();
             //发送信息，通知发送端，可以发送数据了
-            showBitmap(recv_init);
+            showBitmap(recv_init,2000);
             //该参数需要在适当位置清空，否则出问题。
             recv_lastStr = result;
 
