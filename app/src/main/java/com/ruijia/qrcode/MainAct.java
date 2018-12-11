@@ -324,7 +324,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             //初始化接收端数据
             clearRecvParams();
             //发送信息，通知发送端，可以发送数据了
-            showBitmap(recv_init, 2000);
+            showRecvBitmap(recv_init, 2000);
             //该参数需要在适当位置清空，否则出问题。
             recv_lastStr = result;
 
@@ -514,9 +514,9 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                             Log.d(RECV_TAG, "接收端：数据没有缺失");
                             //发送结束标记，结束标记为：QrCodeContentReceiveOver
                             if (isSave) {
-                                showBitmap(receiveOver_Content + SUCCESS, 1500);
+                                showRecvBitmap(receiveOver_Content + SUCCESS, 1500);
                             } else {
-                                showBitmap(receiveOver_Content + FAILED, 1500);
+                                showRecvBitmap(receiveOver_Content + FAILED, 1500);
                             }
 
                             if (timer != null) {
@@ -537,7 +537,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                                 Log.e(TAG, "error=" + e.toString());
 
                                 //发送结束标记，结束标记为：QrCodeContentReceiveOver
-                                showBitmap(receiveOver_Content);
+                                showRecvBitmap(receiveOver_Content);
                                 if (timer != null) {
                                     timer.cancel();
                                     timer = null;
@@ -545,7 +545,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                             }
                         } else {
                             //发送结束标记，结束标记为：QrCodeContentReceiveOver
-                            showBitmap(receiveOver_Content);
+                            showRecvBitmap(receiveOver_Content);
                             if (timer != null) {
                                 timer.cancel();
                                 timer = null;
@@ -785,7 +785,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         //
         //初始化
         timeoutCount = 0;
-        showBitmap(send_init);
+        showRecvBitmap(send_init);
         //触发异步
         handler.removeCallbacks(initSendConnectTask);
         handler.post(initSendConnectTask);
@@ -837,7 +837,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                                 final String sizeStr = ConvertUtils.int2String(sendSize);
 
                                 //数据发送结束，发送数据配置信息：文件路径+图片尺寸
-                                showBitmap(sendOver_Contnet + sendFlePath + sizeStr);
+                                showSendBitmap(sendOver_Contnet + sendFlePath + sizeStr);
                                 //结束倒计时
                                 timer.cancel();
                                 //TODO 如果对焦不好，接收端收不到数据
@@ -900,7 +900,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                                     runOnUiThread(new Runnable() {
                                         @Override
                                         public void run() {
-                                            showBitmap(sendOver_Contnet + sendFlePath + sizeStr);
+                                            showSendBitmap(sendOver_Contnet + sendFlePath + sizeStr);
                                             timer.cancel();
                                             //TODO 是否清除本次参数
 
@@ -926,7 +926,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                showBitmap(sendOver_Contnet + sendFlePath + sizeStr);
+                                showSendBitmap(sendOver_Contnet + sendFlePath + sizeStr);
                                 timer.cancel();
                                 //TODO 是否清除本次参数
 
@@ -1167,7 +1167,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
      * @param content 不为空
      * @return
      */
-    private void showBitmap(final String content) {
+    private void showSendBitmap(final String content) {
 //        new AsyncTask<Void, Void, Bitmap>() {
 //            @Override
 //            protected Bitmap doInBackground(Void... voids) {
@@ -1184,7 +1184,33 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
 //                }
 //            }
 //        }.execute();
-        showBitmap(content, 1000);
+        showSendBitmap(content, 1000);
+    }
+
+    /**
+     * 创建并显示
+     *
+     * @param content 不为空
+     * @return
+     */
+    private void showRecvBitmap(final String content) {
+//        new AsyncTask<Void, Void, Bitmap>() {
+//            @Override
+//            protected Bitmap doInBackground(Void... voids) {
+//                return CodeUtils.createByMultiFormatWriter(content, size);
+//            }
+//
+//            @Override
+//            protected void onPostExecute(Bitmap bitmap) {
+//                if (bitmap != null) {
+//                    img_result.setImageBitmap(bitmap);
+//
+//                } else {
+//                    Log.e(TAG, "生成二维码失败");
+//                }
+//            }
+//        }.execute();
+        showRecvBitmap(content, 1000);
     }
 
     /**
@@ -1194,7 +1220,60 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
      * @param showTime ms,显示时长 默认1000
      * @return
      */
-    private void showBitmap(final String content, final long showTime) {
+    private void showSendBitmap(final String content, final long showTime) {
+        showTimerCount = 0;
+        new AsyncTask<Void, Void, Bitmap>() {
+            @Override
+            protected Bitmap doInBackground(Void... voids) {
+                return CodeUtils.createByMultiFormatWriter(content, size);
+            }
+
+            @Override
+            protected void onPostExecute(final Bitmap bitmap) {
+                if (bitmap != null) {
+                    if (showTimer != null) {
+                        showTimer.cancel();
+                        showTimer = null;
+                    }
+                    showTimer = new Timer();
+                    showTimer.schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            //终止倒计时
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (showTimerCount < 4) {// TODO 显示2s结束显示
+                                        img_result.setImageBitmap(bitmap);
+                                        showTimerCount++;
+                                    } else {
+                                        //TODO 接收端不用，需要修改
+                                        updateConnectListener();//耗时完成，添加监听
+                                        img_result.setImageBitmap(null);
+                                        if (showTimer != null) {
+                                            showTimer.cancel();
+                                            showTimer = null;
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    }, 0, showTime);
+                } else {
+                    Log.e(TAG, "生成二维码失败");
+                }
+            }
+        }.execute();
+    }
+
+    /**
+     * 创建并显示
+     *
+     * @param content  不为空
+     * @param showTime ms,显示时长 默认1000
+     * @return
+     */
+    private void showRecvBitmap(final String content, final long showTime) {
         showTimerCount = 0;
         new AsyncTask<Void, Void, Bitmap>() {
             @Override
