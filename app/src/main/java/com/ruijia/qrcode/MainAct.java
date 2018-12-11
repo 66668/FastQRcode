@@ -71,8 +71,8 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private int showTimerCount = 0;//
 
     //===================发送端连接接收端测试 变量=====================
-    private String send_init = "QrcodeSENDCONNECTQrcodeSENDCONNECTQrcodeSENDCONNECTQrcodeSENDCONNECT";//发送端 发送连接信息，通知接收端初始化数据
-    private String recv_init = "QrcodeRECVCONNECTQrcodeRECVCONNECTQrcodeRECVCONNECTQrcodeRECVCONNECT";//接收端 发送连接信息，通知发送端发送数据
+    private String send_init = "QrcodeSENDCONNECTQrcodeSENDCONNECT";//发送端 发送连接信息，通知接收端初始化数据
+    private String recv_init = "QrcodeRECVCONNECTQrcodeRECVCONNECT";//接收端 发送连接信息，通知发送端发送数据
     private long ininConnectTime;//测试接收端是否可用
     private static final int TIMEOUT = 20;//连接超时
     private int timeoutCount = 0;
