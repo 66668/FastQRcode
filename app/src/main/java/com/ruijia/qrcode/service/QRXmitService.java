@@ -133,7 +133,7 @@ public class QRXmitService extends Service {
 
         SPUtil.putInt(Constants.TIME_INTERVAL, timeInterval);
         SPUtil.putInt(Constants.FILE_SIZE, fileSize);
-        SPUtil.putInt(Constants.CON_TIME_OUT, 15);
+        SPUtil.putInt(Constants.CON_TIME_OUT, 15);//TODO
 
         return (SPUtil.getInt(Constants.TIME_INTERVAL, 0) != 0
                 && SPUtil.getInt(Constants.TIME_INTERVAL, 0) != 0
