@@ -74,9 +74,10 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     //===================发送端连接接收端测试 变量=====================
     private String send_init = "QrcodeSENDCONNECTQrcodeSENDCONNECT";//发送端 发送连接信息，通知接收端初始化数据
     private String recv_init = "QrcodeRECVCONNECTQrcodeRECVCONNECT";//接收端 发送连接信息，通知发送端发送数据
-    private long ininConnectTime;//测试接收端是否可用
     private static final int TIMEOUT = 20;//连接超时
-    private int timeoutCount = 0;
+    private static final int CONNECT_TIMEOUT = 40;//通讯超时
+    private int timeoutCount = 0;//初始化倒计时使用
+    private int connectCount = 0;//链路通讯中 倒计时使用
     private String recv_lastStr = null;
     private boolean isRecvInit = false;
 
@@ -174,7 +175,8 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
 
         //发送端，收到结束标记，处理缺失数据/
         if (resultStr.contains(receiveOver_Content)) {//接收端 结束标记
-            senTerminalOver(resultStr);
+//            updateConnectListener();//不需要监听
+            sendTerminalOver(resultStr);
             return;
         }
 
@@ -190,7 +192,6 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         final String result = resultStr.substring(10, (resultStr.length() - 4));
         if (flagStr.contains("snd")) {//发送端发送的数据
             //接收端
-
             //必要的参数修改 清空初始化连接
             recv_lastStr = null;
             handler.removeCallbacks(initRecvTimeoutTask);//本想boolean判断，但是麻烦，就实时清除吧。
@@ -198,6 +199,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             RecvTerminalScan(startTime, flagStr, endFlag, result);
         } else if (flagStr.contains("rcv")) {
             //发送端
+            updateConnectListener();
             SndTerminalScan(flagStr, endFlag, result);
         } else {
             //未识别的错误数据;
@@ -209,6 +211,52 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     public void onScanQRCodeOpenCameraError() {
         Log.e(TAG, "QRCodeView.Delegate--ScanQRCodeOpenCameraError()");
     }
+
+    //========================================================================================
+    //=====================================发送端监听：链路意外中断（不是接收端，一定要注意 ）==========================================
+    //========================================================================================
+
+
+    /**
+     * 添加意外中断监听（最好在最小方法内监听）
+     * <p>
+     * 慎重使用此方法，加入该方法，新能会下降
+     * 禁止在高频率下使用
+     */
+    private void updateConnectListener() {
+        connectCount = 0;
+        handler.removeCallbacks(updateConnectTask);
+        handler.post(updateConnectTask);
+    }
+
+    /**
+     * 移除中断监听（如果调用了如上监听，有耗时操作，最好在耗时操作前移除监听，耗时后再开启监听）
+     */
+    private void removeConnectListener() {
+        connectCount = 0;
+        handler.removeCallbacks(updateConnectTask);
+    }
+
+    /**
+     * 原理：每次识别出结果，更新该异步，如果识别不出扫描，倒计时20s,超过20s则链路层连接失败
+     */
+    private Runnable updateConnectTask = new Runnable() {
+        @Override
+        public void run() {
+            if (connectCount < CONNECT_TIMEOUT) {
+                connectCount++;
+                handler.removeCallbacks(this);
+                handler.postDelayed(this, 950);
+            } else {
+                handler.removeCallbacks(this);
+                //连接超时
+                //回调
+                myService.isTrans(false, "连接接收端设备失败，连接超时:" + TIMEOUT + "S");
+                //不需要清空数据，万一起死回生，清空容易bug
+            }
+        }
+    };
+
 
     //========================================================================================
     //=====================================接收端处理==========================================
@@ -275,7 +323,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             //初始化接收端数据
             clearRecvParams();
             //发送信息，通知发送端，可以发送数据了
-            showBitmap(recv_init,2000);
+            showBitmap(recv_init, 2000);
             //该参数需要在适当位置清空，否则出问题。
             recv_lastStr = result;
 
@@ -557,7 +605,6 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
      * 连接测试清空
      */
     private void clearInitConnect() {
-        ininConnectTime = 0;
         timeoutCount = 0;
         recv_lastStr = null;
     }
@@ -648,7 +695,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
      *
      * @param resultStr
      */
-    private void senTerminalOver(String resultStr) {
+    private void sendTerminalOver(String resultStr) {
 
         //处理标记
         if (resultStr.equals(lastSendOver)) {
@@ -661,17 +708,16 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
 
         //格式:QrCodeContentReceiveOverSuccess,文件传输完成，回调aidl。
         if (resultStr.length() > receiveOver_Content.length()) {
-            Log.d(SEND_TAG, "接收端文件传输完成" );
+            Log.d(SEND_TAG, "接收端文件传输完成");
             sendComplete();
             //格式是QrCodeContentReceiveOver
         } else {
-            Log.d(SEND_TAG, "查找缺失数据并拼接" );
+            Log.d(SEND_TAG, "查找缺失数据并拼接");
             //查找缺失数据并拼接
             new AsyncTask<Void, Void, List<Bitmap>>() {
                 @Override
                 protected List<Bitmap> doInBackground(Void... voids) {
                     List<Bitmap> maps = new ArrayList<>();
-                    //TODO 利用位置信息，取bitmap
                     for (int i = 0; i < sendBackList.size(); i++) {
                         a:
                         for (int j = 0; j < sendImgs.size(); j++) {
@@ -681,7 +727,6 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                             }
                         }
                     }
-                    Log.e(TAG, "sendMore:sendImgs=" + sendImgs.size() + "--sendBackList=" + sendBackList.size() + "--sendImgsMore=" + maps.size());
                     return maps;
                 }
 
@@ -707,9 +752,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
      */
     private void initSendConnect() {
         //
-
         //初始化
-        ininConnectTime = System.currentTimeMillis();
         timeoutCount = 0;
         showBitmap(send_init);
         //触发异步
@@ -725,6 +768,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
      * 第一次发送
      */
     private void startSend() {
+        removeConnectListener();//发送耗时，需要解除监听
         //结束初始化连接
         handler.removeCallbacks(initSendConnectTask);
         //保存当前时间节点。
@@ -789,7 +833,8 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
      * 二次+发送
      */
     private void startSendMore() {
-        Log.d(SEND_TAG, " 二次+发送" );
+        removeConnectListener();//发送耗时，需要解除监听
+        Log.d(SEND_TAG, " 二次+发送");
         sendCounts = 0;
         lastSendOver = "";//清除，否则该方法不再出发。
         //此处不保存时间节点，因为统计用不到
@@ -872,6 +917,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
      * 发送端接收结束标记
      */
     private void sendComplete() {
+        removeConnectListener();//删除监听
         //统计 回调
         long qrstartTime = SPUtil.getLong(Constants.START_SEND_TIME, System.currentTimeMillis());//二维码开始时间
         long startTime = SPUtil.getLong(Constants.START_TIME, System.currentTimeMillis());//总时间
@@ -1145,6 +1191,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                                         showTimerCount++;
                                     } else {
                                         //
+                                        updateConnectListener();//耗时完成，添加监听
                                         img_result.setImageBitmap(null);
                                         if (showTimer != null) {
                                             showTimer.cancel();
