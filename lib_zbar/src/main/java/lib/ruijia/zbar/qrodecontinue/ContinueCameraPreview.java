@@ -208,7 +208,7 @@ public class ContinueCameraPreview extends SurfaceView implements SurfaceHolder.
     }
 
     private void handleFocusMetering(float originFocusCenterX, float originFocusCenterY,
-            int originFocusWidth, int originFocusHeight) {
+                                     int originFocusWidth, int originFocusHeight) {
         try {
             boolean isNeedUpdate = false;
             Camera.Parameters focusMeteringParameters = mCamera.getParameters();
@@ -275,6 +275,9 @@ public class ContinueCameraPreview extends SurfaceView implements SurfaceHolder.
             Camera.Parameters parameters = mCamera.getParameters();
             // 连续对焦
             parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+            //TODO 微距
+            parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_MACRO);
+
             mCamera.setParameters(parameters);
             // 要实现连续的自动对焦，这一句必须加上
             mCamera.cancelAutoFocus();
