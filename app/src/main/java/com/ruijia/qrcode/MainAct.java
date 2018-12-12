@@ -80,6 +80,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private static final int CONNECT_TIMEOUT = 30;//通讯超时
     private int timeoutCount = 0;//初始化倒计时使用
     private int connectCount = 0;//链路通讯中 倒计时使用
+    private int lastTextCount = 0;//链路通讯中 倒计时使用,避免接收端拒绝重复文件
     private int SendMoreCount = 0;//如果某个二维码不识别，发送再多也没用，到达20次,强制关闭通讯
     private String recv_lastStr = null;
 
@@ -144,6 +145,8 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         //结果相同不处理
         if (TextUtils.isEmpty(resultStr) || resultStr.length() < 14 || resultStr.equals(lastText)) {
             Log.d(SCAN_TAG, "重复扫描");
+            //需加倒计时，避免接收端死机不接受反复发送的数据
+            updateLastTextListener();
             return;
         }
         long startTime = System.currentTimeMillis();
@@ -213,6 +216,38 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     public void onScanQRCodeOpenCameraError() {
         Log.e(TAG, "QRCodeView.Delegate--ScanQRCodeOpenCameraError()");
     }
+
+
+    /**
+     * 添加意外中断监听（最好在最小方法内监听）
+     * <p>
+     * 慎重使用此方法，加入该方法，新能会下降
+     * 禁止在高频率下使用
+     */
+    private void updateLastTextListener() {
+        lastTextCount = 0;
+        handler.removeCallbacks(updateLastTextTask);
+        handler.post(updateLastTextTask);
+    }
+
+    /**
+     * 原理：每次识别出结果，更新该异步，如果发送端识别不出二维码，倒计时20s,超过20s则链路层连接失败
+     */
+    private Runnable updateLastTextTask = new Runnable() {
+        @Override
+        public void run() {
+            if (lastTextCount < CONNECT_TIMEOUT) {
+                lastTextCount++;
+                handler.removeCallbacks(this);
+                handler.postDelayed(this, 950);
+            } else {
+                handler.removeCallbacks(this);
+                //超时清空 lasttext
+                lastText = "";
+            }
+        }
+    };
+
 
     //========================================================================================
     //=====================================发送端监听：链路意外中断（不是接收端，一定要注意 ）==========================================
@@ -950,7 +985,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                 }
             }, 100, PSOTDELAY_TIME_SEND);
         } else {
-            myService.isTrans(false,"缺失数据无法补全，传输文件失败");
+            myService.isTrans(false, "缺失数据无法补全，传输文件失败");
             clearSendParams();
 
         }
