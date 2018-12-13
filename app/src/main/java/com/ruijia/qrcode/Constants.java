@@ -28,7 +28,7 @@ public class Constants {
      * <p>
      * 最强性能长度 2938
      */
-    public static final int qrSize = 1000;//
+    public static final int qrSize = 1500;//
 
 
     /**
