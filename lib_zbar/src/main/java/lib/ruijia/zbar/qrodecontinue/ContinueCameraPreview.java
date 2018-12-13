@@ -273,8 +273,9 @@ public class ContinueCameraPreview extends SurfaceView implements SurfaceHolder.
         }
         try {
             Camera.Parameters parameters = mCamera.getParameters();
+            //TODO 微距模式
             // 连续对焦
-            parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+//            parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
             // 微距
             parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_MACRO);//TODO
 
