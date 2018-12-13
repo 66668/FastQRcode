@@ -179,8 +179,8 @@ public abstract class ContinueQRCodeView extends RelativeLayout implements Camer
         startCamera();
         // 开始前先移除之前的任务
         if (mHandler != null) {
-            mHandler.removeCallbacks(mOneShotPreviewCallbackTask);
-            mHandler.postDelayed(mOneShotPreviewCallbackTask, delay);
+            mHandler.removeCallbacks(continuePreviewCallbackTask);
+            mHandler.postDelayed(continuePreviewCallbackTask, delay);
         }
     }
 
@@ -203,7 +203,7 @@ public abstract class ContinueQRCodeView extends RelativeLayout implements Camer
         }
 
         if (mHandler != null) {
-            mHandler.removeCallbacks(mOneShotPreviewCallbackTask);
+            mHandler.removeCallbacks(continuePreviewCallbackTask);
         }
     }
 
@@ -250,6 +250,7 @@ public abstract class ContinueQRCodeView extends RelativeLayout implements Camer
         mHandler = null;
         mDelegate = null;
         mOneShotPreviewCallbackTask = null;
+        continuePreviewCallbackTask = null;
     }
 
     /**
@@ -331,15 +332,16 @@ public abstract class ContinueQRCodeView extends RelativeLayout implements Camer
      */
     @Override
     public void onPreviewFrame(final byte[] data, final Camera camera) {
+
+        //zbar的log
+//        if (ContinueBGAQRCodeUtil.isDebug()) {
+//            ContinueBGAQRCodeUtil.d("两次 onPreviewFrame 时间间隔：" + (System.currentTimeMillis() - sLastPreviewFrameTime));
+//            sLastPreviewFrameTime = System.currentTimeMillis();
+//        }
+
+        //TODO log测试
         Log.d(TAG, "两次 onPreviewFrame 时间间隔：" + (System.currentTimeMillis() - sLastPreviewFrameTime));
-        if (ContinueBGAQRCodeUtil.isDebug()) {
-            ContinueBGAQRCodeUtil.d("两次 onPreviewFrame 时间间隔：" + (System.currentTimeMillis() - sLastPreviewFrameTime));
-            sLastPreviewFrameTime = System.currentTimeMillis();
-        }
-        //持续识别
-        if (mCamera != null) {
-            mCamera.setOneShotPreviewCallback(ContinueQRCodeView.this);
-        }
+        sLastPreviewFrameTime = System.currentTimeMillis();
 
         if (mHandler != null) {
             mHandler.post(new Runnable() {
@@ -352,13 +354,6 @@ public abstract class ContinueQRCodeView extends RelativeLayout implements Camer
                 }
             });
         }
-
-//        if ((mProcessDataTask != null && (mProcessDataTask.getStatus() == AsyncTask.Status.PENDING
-//                || mProcessDataTask.getStatus() == AsyncTask.Status.RUNNING))) {
-//            return;
-//        }
-//
-//        mProcessDataTask = new ContinueProcessDataTask(camera, data, this, ContinueBGAQRCodeUtil.isPortrait(getContext())).perform();
     }
 
 
@@ -374,33 +369,11 @@ public abstract class ContinueQRCodeView extends RelativeLayout implements Camer
     void onPostParseData(ContinueScanResult scanResult) {
 
         String result = scanResult == null ? null : scanResult.result;
-        if (TextUtils.isEmpty(result)) {
-            try {
-                //持续识别
-                if (mCamera != null) {
-                    mCamera.setOneShotPreviewCallback(ContinueQRCodeView.this);
-                    mCamera.autoFocus(new Camera.AutoFocusCallback() {
-                        public void onAutoFocus(boolean success, Camera camera) {
-                            startContinuousAutoFocus();
-                        }
-                    });
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        } else {
+        if (!TextUtils.isEmpty(result)) {
             try {
                 if (mDelegate != null) {
+                    //返回结果
                     mDelegate.onScanQRCodeSuccess(result);
-                    //持续识别
-                    if (mCamera != null) {
-                        mCamera.setOneShotPreviewCallback(ContinueQRCodeView.this);
-                        mCamera.autoFocus(new Camera.AutoFocusCallback() {
-                            public void onAutoFocus(boolean success, Camera camera) {
-                                startContinuousAutoFocus();
-                            }
-                        });
-                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -436,12 +409,34 @@ public abstract class ContinueQRCodeView extends RelativeLayout implements Camer
         }
     }
 
+    //方式1：识别一次
     private Runnable mOneShotPreviewCallbackTask = new Runnable() {
         @Override
         public void run() {
             if (mCamera != null) {
                 try {
+
                     mCamera.setOneShotPreviewCallback(ContinueQRCodeView.this);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    };
+
+    //方式2：持续识别
+    private Runnable continuePreviewCallbackTask = new Runnable() {
+        @Override
+        public void run() {
+            if (mCamera != null) {
+                try {
+                    mCamera.setPreviewCallback(ContinueQRCodeView.this);
+                    //持续聚焦
+                    mCamera.autoFocus(new Camera.AutoFocusCallback() {
+                        public void onAutoFocus(boolean success, Camera camera) {
+                            startContinuousAutoFocus();
+                        }
+                    });
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
