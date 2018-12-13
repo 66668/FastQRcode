@@ -186,6 +186,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         }
 
         //======数据传输中=======
+        lastText = resultStr;
         /**
          *（二）解析传输内容，文件的内容，将数据保存在map中
          */
@@ -389,7 +390,6 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                lastText = recvStr;
                 vibrate();  //震动
                 Log.d(QR_TAG, "接收端保存数据:" + pos);
                 receveContentMap.put(pos, recvStr);//map暂时保存数据
@@ -731,7 +731,6 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         final int pos = Integer.parseInt(posStr);//位置 "0001234"-->1234
         Log.d(QR_TAG, "发送端：接收数据处理:" + pos);
         if (recvStr.contains(recv_loss_all)) {//接收端数据全部丢失,发送端需要重新发送数据
-            lastText = recvStr;
             sendBackList = new ArrayList<>();
             for (int i = 0; i < sendImgs.size(); i++) {
                 sendBackList.add(i);
