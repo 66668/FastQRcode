@@ -658,10 +658,8 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                 e.printStackTrace();
             }
         }
-
-
-        //清空数据
-        clearRecvParams();
+        //延迟清空数据
+        clearRecvParamsDelay();
     }
 
 
@@ -1377,6 +1375,40 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                 }
             }
         }.execute();
+    }
+
+    /**
+     * 由于设置了最后一张多显示ns,所以清空数据也延迟ns执行，避免bug
+     */
+
+    private void clearRecvParamsDelay() {
+        showTimerCount = 0;
+        if (showTimer != null) {
+            showTimer.cancel();
+            showTimer = null;
+        }
+        showTimer = new Timer();
+        showTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                //终止倒计时
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (showTimerCount < 2) {
+                            showTimerCount++;
+                        } else {
+                            clearRecvParams();
+                            showTimerCount = 0;
+                            if (showTimer != null) {
+                                showTimer.cancel();
+                                showTimer = null;
+                            }
+                        }
+                    }
+                });
+            }
+        }, 0, FLAG_TIME);
     }
 
 
