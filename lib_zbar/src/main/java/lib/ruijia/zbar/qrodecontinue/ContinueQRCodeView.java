@@ -386,6 +386,11 @@ public abstract class ContinueQRCodeView extends RelativeLayout implements Camer
                     //持续识别
                     if (mCamera != null) {
                         mCamera.setOneShotPreviewCallback(ContinueQRCodeView.this);
+                        mCamera.autoFocus(new Camera.AutoFocusCallback() {
+                            public void onAutoFocus(boolean success, Camera camera) {
+                                startContinuousAutoFocus();
+                            }
+                        });
                     }
                 }
             } catch (Exception e) {
@@ -393,6 +398,27 @@ public abstract class ContinueQRCodeView extends RelativeLayout implements Camer
             }
         }
     }
+
+    /**
+     * 连续对焦
+     */
+    private void startContinuousAutoFocus() {
+        try {
+            Camera.Parameters parameters = mCamera.getParameters();
+            //TODO 微距模式
+            // 连续对焦
+//            parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+            // 微距
+            parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_MACRO);//TODO
+
+            mCamera.setParameters(parameters);
+            // 要实现连续的自动对焦，这一句必须加上
+            mCamera.cancelAutoFocus();
+        } catch (Exception e) {
+            Log.e("SJY", "连续对焦失败");
+        }
+    }
+
 
     void onPostParseBitmapOrPicture(ContinueScanResult scanResult) {
         if (mDelegate != null) {
