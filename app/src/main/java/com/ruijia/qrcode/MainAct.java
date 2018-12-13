@@ -446,7 +446,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             for (int i = 0; i < receveSize; i++) {
                 //缓存没有对应数据，则缺失
                 if (receveContentMap.get(i) == null || TextUtils.isEmpty(receveContentMap.get(i))) {
-                    Log.d(TAG, "缺失=" + i);
+                    Log.d(RECV_TAG, "缺失=" + i);
                     feedBackFlagList.add(i);
                 }
             }
@@ -455,7 +455,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             if (feedBackFlagList.size() > 0) {//有缺失数据
                 //
                 if (feedBackFlagList.size() == receveSize) {//丢失全部数据
-                    Log.d(TAG, "接收端--数据全部缺失:");
+                    Log.d(RECV_TAG, "接收端--数据全部缺失:");
                     try {
                         //
                         String backStr = "rcv" + ConvertUtils.int2String(1) + recv_loss_all + endTag;
@@ -467,7 +467,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
 
                 } else if (feedBackFlagList.size() < receveSize) {//丢失部分数据
                     //拼接数据,告诉发送端发送缺失数据
-                    Log.d(TAG, "接收端--数据缺失:");
+                    Log.d(RECV_TAG, "接收端--数据缺失:");
                     //
                     List<String> orgList = new ArrayList<>();
                     for (int i = 0; i < feedBackFlagList.size(); i++) {
