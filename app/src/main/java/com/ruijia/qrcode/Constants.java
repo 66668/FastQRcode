@@ -10,7 +10,7 @@ public class Constants {
      * 默认150
      */
     public static final String TIME_INTERVAL = "time_interval";
-    public static final int DEFAULT_TIME = 400;
+    public static final int DEFAULT_TIME = 350;
 
     /**
      * 最大文件大小 默认5M
@@ -28,7 +28,7 @@ public class Constants {
      * <p>
      * 最强性能长度 2938
      */
-    public static final int qrSize = 1300;//
+    public static final int qrSize = 1700;//
 
 
     /**
