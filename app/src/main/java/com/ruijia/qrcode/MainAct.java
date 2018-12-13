@@ -1010,6 +1010,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
      */
     private void sendComplete() {
         removeConnectListener();//删除监听
+        handler.removeCallbacks(initSendConnectTask);
         //统计 回调
         long qrstartTime = SPUtil.getLong(Constants.START_SEND_TIME, System.currentTimeMillis());//二维码开始时间
         long startTime = SPUtil.getLong(Constants.START_TIME, System.currentTimeMillis());//总时间

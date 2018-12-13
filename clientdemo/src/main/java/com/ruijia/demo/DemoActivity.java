@@ -73,7 +73,7 @@ public class DemoActivity extends BaseActivity implements View.OnClickListener {
         } else if (v == btn_time_sure) {
             String str = et_timeInteral.getText().toString();
             if (TextUtils.isEmpty(str)) {
-                timeInterval = 500;
+                timeInterval = 1000;
                 et_timeInteral.setText("");
                 et_timeInteral.setHint("默认发送时间间隔：" + timeInterval + "ms");
             } else {
