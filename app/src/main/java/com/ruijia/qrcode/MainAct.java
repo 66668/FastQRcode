@@ -737,6 +737,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                 sendBackList.add(i);
             }
         } else {
+            //TODO 异步导致拿不到线程数据
             //扔到handler的异步中处理
             runOnUiThread(new Runnable() {
                 @Override
