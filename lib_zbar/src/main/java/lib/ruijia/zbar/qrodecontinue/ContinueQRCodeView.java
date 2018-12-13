@@ -362,7 +362,7 @@ public abstract class ContinueQRCodeView extends RelativeLayout implements Camer
     protected abstract ContinueScanResult processBitmapData(Bitmap bitmap);
 
     /**
-     * TODO 处理结果 继续预览还是 返回结果
+     * 返回结果
      *
      * @param scanResult
      */
