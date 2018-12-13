@@ -1026,7 +1026,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         sendImgs = new ArrayList<>();
         //
         img_result.setImageBitmap(null);
-        img_result.setBackground(ContextCompat.getDrawable(this, 0));
+        img_result.setBackground(null);
     }
 
     /**
