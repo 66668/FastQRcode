@@ -532,7 +532,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         //需要清除 lastRecvOver标记，否则，二次+接收端收不到结束处理标记
         lastRecvOver = "";//已清除
         //
-        recvCounts = -1;//让缺失数据多显示一会，默认是0
+        recvCounts = 0;//让缺失数据多显示一会，默认是0
 
         //开启倒计时
         if (timer != null) {
@@ -593,7 +593,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                     }
                 });
             }
-        }, 0, PSOTDELAY_TIME_BACK);
+        }, 0, PSOTDELAY_TIME_BACK * 3);
     }
 
     /**
