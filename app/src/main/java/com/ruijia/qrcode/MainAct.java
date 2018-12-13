@@ -567,7 +567,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
 
                         //有缺失发送
                         if (recvCounts < feedBackImgs.size()) {
-                            Log.d(QR_TAG, "接收端：数据有缺失");
+                            Log.d(TAG, "接收端：数据有缺失");
                             try {
                                 img_result.setImageBitmap(feedBackImgs.get(recvCounts));
                                 recvCounts++;
@@ -593,7 +593,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                     }
                 });
             }
-        }, 100, PSOTDELAY_TIME_BACK);
+        }, 0, PSOTDELAY_TIME_BACK * 2);
     }
 
     /**
