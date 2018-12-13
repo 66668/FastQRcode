@@ -10,7 +10,7 @@ public class Constants {
      * 默认150
      */
     public static final String TIME_INTERVAL = "time_interval";
-    public static final int DEFAULT_TIME = 1000;
+    public static final int DEFAULT_TIME = 600;
 
     /**
      * 最大文件大小 默认5M

@@ -467,7 +467,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
 
                 } else if (feedBackFlagList.size() < receveSize) {//丢失部分数据
                     //拼接数据,告诉发送端发送缺失数据
-                    Log.d(RECV_TAG, "接收端--数据缺失:");
+                    Log.d(RECV_TAG, "接收端--数据缺失:"+feedBackFlagList.size());
                     //
                     List<String> orgList = new ArrayList<>();
                     for (int i = 0; i < feedBackFlagList.size(); i++) {
