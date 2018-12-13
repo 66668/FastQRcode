@@ -951,6 +951,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                                         runOnUiThread(new Runnable() {
                                             @Override
                                             public void run() {
+
                                                 showSendBitmap(sendOver_Contnet + sendFlePath + sizeStr, FLAG_TIME);
                                                 if (timer != null) {
                                                     timer.cancel();
