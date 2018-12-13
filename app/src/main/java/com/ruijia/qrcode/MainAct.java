@@ -150,14 +150,13 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             return;
         }
         long startTime = System.currentTimeMillis();
-
+        lastText = resultStr;
         //======初始化连接=======
 
         //接收端：发送端发送初始化信息 接收端初始化使用
         if (resultStr.contains(send_init)) {
             //初始化
             initRecvConnect(resultStr);
-            lastText = resultStr;
         }
 
         //发送端：接收端发送初始化信息，发送端接收后发送数据
@@ -168,7 +167,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                 //第一次发送结束后，设置为false
                 isSending = true;
             }
-            lastText = resultStr;
+
         }
 
         //======数据传输结束=======
@@ -186,7 +185,6 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         }
 
         //======数据传输中=======
-        lastText = resultStr;
         /**
          *（二）解析传输内容，文件的内容，将数据保存在map中
          */
@@ -741,7 +739,6 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                 @Override
                 public void run() {
                     sendBackList = new ArrayList<>();
-                    lastText = recvStr;
                     vibrate();  //震动
                     //数据转成list,list保存位置信息
                     String[] strDatas = recvStr.split("/");
