@@ -26,6 +26,7 @@ public abstract class ContinueQRCodeView extends RelativeLayout implements Camer
      * 识别的最小延时，避免相机还未初始化完成
      */
     public static final int SPOT_MIN_DELAY = 40;//100
+    public static final String TAG = "camera";
     protected Camera mCamera;
     protected ContinueCameraPreview mCameraPreview;
     protected ContinueScanBoxView mScanBoxView;//扫描框
@@ -330,6 +331,7 @@ public abstract class ContinueQRCodeView extends RelativeLayout implements Camer
      */
     @Override
     public void onPreviewFrame(final byte[] data, final Camera camera) {
+        Log.d(TAG, "两次 onPreviewFrame 时间间隔：" + (System.currentTimeMillis() - sLastPreviewFrameTime));
         if (ContinueBGAQRCodeUtil.isDebug()) {
             ContinueBGAQRCodeUtil.d("两次 onPreviewFrame 时间间隔：" + (System.currentTimeMillis() - sLastPreviewFrameTime));
             sLastPreviewFrameTime = System.currentTimeMillis();
@@ -343,8 +345,10 @@ public abstract class ContinueQRCodeView extends RelativeLayout implements Camer
             mHandler.post(new Runnable() {
                 @Override
                 public void run() {
+                    long startTime = System.currentTimeMillis();
                     ContinueScanResult scanResult = processData(data);
                     onPostParseData(scanResult);
+                    Log.d(TAG, "异步处理二维码帧耗时=" + (System.currentTimeMillis() - startTime));
                 }
             });
         }
