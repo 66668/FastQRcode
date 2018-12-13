@@ -492,7 +492,9 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                         e.printStackTrace();
                     }
                     for (int i = 0; i < backsize; i++) {
-                        feedBackDatas.add("rcv" + backSizeStr + orgList.get(i) + endTag);
+                        String str = "rcv" + backSizeStr + orgList.get(i) + endTag;
+                        Log.d(TAG, "缺失返回内容=" + str);
+                        feedBackDatas.add(str);
                     }
 
                     //生成bitmap 耗时操作
@@ -728,7 +730,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         //处理片段位置标记
         String posStr = headTags.substring(3, 10);
         final int pos = Integer.parseInt(posStr);//位置 "0001234"-->1234
-        Log.d(QR_TAG, "发送端：接收数据处理:" + pos);
+
         if (recvStr.contains(recv_loss_all)) {//接收端数据全部丢失,发送端需要重新发送数据
             sendBackList = new ArrayList<>();
             for (int i = 0; i < sendImgs.size(); i++) {
@@ -747,6 +749,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                     for (int i = 0; i < strDatas.length; i++) {
                         sendBackList.add(Integer.parseInt(strDatas[i]));
                     }
+                    Log.d(TAG, "发送端：接收数据处理,返回张数=" + pos + "内容=" + recvStr + "\n取出的长度sendBackList.size()=" + sendBackList.size());
                 }
             });
         }
@@ -776,14 +779,15 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             if (resultStr.contains(FAILED)) {
                 myService.isTrans(false, "接收端保存文件异常，传输失败");
             } else {
-                Log.d(QR_TAG, "接收端文件传输完成");
+                Log.d(TAG, "接收端文件传输完成");
                 sendComplete();
             }
 
             //格式是QrCodeContentReceiveOver
         } else {
-            Log.e(QR_TAG, "查找缺失数据并拼接--" + resultStr);
+            Log.e(TAG, "查找缺失数据并拼接--" + resultStr);
             //查找缺失数据并拼接
+            //TODO 需要添加反馈，sendBackList=0再发送一次
             new AsyncTask<Void, Void, List<Bitmap>>() {
                 @Override
                 protected List<Bitmap> doInBackground(Void... voids) {
