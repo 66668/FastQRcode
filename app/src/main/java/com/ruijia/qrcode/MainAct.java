@@ -1214,8 +1214,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                     sendImgs != null && sendImgs.size() > 0 && (!TextUtils.isEmpty(sendFlePath)) &&
                     sendSize > 0) {
                 //发送数据
-//                initSendConnect();
-                startSend();
+                initSendConnect();
             } else {
                 myService.isTrans(false, "myListener获取到空数据，无法发送");
             }
