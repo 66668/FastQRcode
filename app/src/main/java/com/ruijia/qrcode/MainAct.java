@@ -44,8 +44,7 @@ import lib.ruijia.zbar.qrodecontinue.ContinueQRCodeView;
  */
 public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private static final String SCAN_TAG = "scan";
-    private static final String RECV_TAG = "recv";
-    private static final String SEND_TAG = "send";
+    private static final String QR_TAG = "qr_sjy";
     private static final String TAG = "SJY";
     private static final int FLAG_TIME = 4000;//最后一张图显示时间
 
@@ -392,7 +391,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             public void run() {
                 lastText = recvStr;
                 vibrate();  //震动
-                Log.d(RECV_TAG, "接收端保存数据:" + pos);
+                Log.d(QR_TAG, "接收端保存数据:" + pos);
                 receveContentMap.put(pos, recvStr);//map暂时保存数据
                 //QRXmitService的aidl在发送端，不会在接收端处理
             }
@@ -413,7 +412,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             //再一次过滤，保证拿到结束标记 只处理一次
             return;
         }
-        Log.d(RECV_TAG, "接收端:发送端单次发送完成");
+        Log.d(QR_TAG, "接收端:发送端单次发送完成");
         //注意该标记需要清除，否则容易出问题，清除时间在：接收端发送二维码处
         lastRecvOver = resultStr;//需清除
 
@@ -446,7 +445,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             for (int i = 0; i < receveSize; i++) {
                 //缓存没有对应数据，则缺失
                 if (receveContentMap.get(i) == null || TextUtils.isEmpty(receveContentMap.get(i))) {
-                    Log.d(RECV_TAG, "缺失=" + i);
+                    Log.d(QR_TAG, "缺失=" + i);
                     feedBackFlagList.add(i);
                 }
             }
@@ -455,7 +454,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             if (feedBackFlagList.size() > 0) {//有缺失数据
                 //
                 if (feedBackFlagList.size() == receveSize) {//丢失全部数据
-                    Log.d(RECV_TAG, "接收端--数据全部缺失:");
+                    Log.d(QR_TAG, "接收端--数据全部缺失:");
                     try {
                         //
                         String backStr = "rcv" + ConvertUtils.int2String(1) + recv_loss_all + endTag;
@@ -467,7 +466,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
 
                 } else if (feedBackFlagList.size() < receveSize) {//丢失部分数据
                     //拼接数据,告诉发送端发送缺失数据
-                    Log.d(RECV_TAG, "接收端--数据缺失:"+feedBackFlagList.size());
+                    Log.d(QR_TAG, "接收端--数据缺失:" + feedBackFlagList.size());
                     //
                     List<String> orgList = new ArrayList<>();
                     for (int i = 0; i < feedBackFlagList.size(); i++) {
@@ -548,7 +547,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
 
                         //没有缺失，直接结束
                         if (feedBackImgs == null || feedBackImgs.size() <= 0) {
-                            Log.d(RECV_TAG, "接收端：数据没有缺失");
+                            Log.d(QR_TAG, "接收端：数据没有缺失");
                             //发送结束标记，结束标记为：QrCodeContentReceiveOver
                             if (isSave) {
                                 showRecvBitmap(receiveOver_Content + SUCCESS, FLAG_TIME);
@@ -565,7 +564,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
 
                         //有缺失发送
                         if (recvCounts < feedBackImgs.size()) {
-                            Log.d(RECV_TAG, "接收端：数据有缺失");
+                            Log.d(QR_TAG, "接收端：数据有缺失");
                             try {
                                 img_result.setImageBitmap(feedBackImgs.get(recvCounts));
                                 recvCounts++;
@@ -598,13 +597,13 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
      * 接收端 保存文件
      */
     private void saveFile() {
-        Log.d(RECV_TAG, "接收端：保存文件");
+        Log.d(QR_TAG, "接收端：保存文件");
         new AsyncTask<Void, Void, String>() {
             @Override
             protected String doInBackground(Void... voids) {
                 if (recvFlePath == null || TextUtils.isEmpty(recvFlePath)) {
                     Log.d(TAG, "文件路径为null");
-                    Log.d(RECV_TAG, "文件路径为null");
+                    Log.d(QR_TAG, "文件路径为null");
                     return null;
                 } else {
                     //拼接数据
@@ -635,7 +634,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
      * @param strPath
      */
     private void recvComplete(String strPath) {
-        Log.d(RECV_TAG, "接收端：保存文件后，反馈信息");
+        Log.d(QR_TAG, "接收端：保存文件后，反馈信息");
         //发送结束二维码
         feedBackImgs = new ArrayList<>();
         if (strPath == null || TextUtils.isEmpty(strPath)) {
@@ -730,7 +729,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         //处理片段位置标记
         String posStr = headTags.substring(3, 10);
         final int pos = Integer.parseInt(posStr);//位置 "0001234"-->1234
-        Log.d(SEND_TAG, "发送端：接收数据处理:" + pos);
+        Log.d(QR_TAG, "发送端：接收数据处理:" + pos);
         if (recvStr.contains(recv_loss_all)) {//接收端数据全部丢失,发送端需要重新发送数据
             lastText = recvStr;
             sendBackList = new ArrayList<>();
@@ -780,13 +779,13 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             if (resultStr.contains(FAILED)) {
                 myService.isTrans(false, "接收端保存文件异常，传输失败");
             } else {
-                Log.d(SEND_TAG, "接收端文件传输完成");
+                Log.d(QR_TAG, "接收端文件传输完成");
                 sendComplete();
             }
 
             //格式是QrCodeContentReceiveOver
         } else {
-            Log.d(SEND_TAG, "查找缺失数据并拼接");
+            Log.e(QR_TAG, "查找缺失数据并拼接--" + resultStr);
             //查找缺失数据并拼接
             new AsyncTask<Void, Void, List<Bitmap>>() {
                 @Override
@@ -807,7 +806,9 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                 @Override
                 protected void onPostExecute(List<Bitmap> bitmaps) {
                     super.onPostExecute(bitmaps);
+                    sendImgsMore = new ArrayList<>();
                     sendImgsMore = bitmaps;
+                    Log.e(QR_TAG, " 二次+发送：缺失长度=" + sendImgsMore.size() + "总长度=" + sendImgs.size());
                     //发送二维码
                     startSendMore();
                 }
@@ -916,7 +917,6 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             SendMoreCount++;
 
             removeConnectListener();//发送耗时，需要解除监听
-            Log.d(SEND_TAG, " 二次+发送：缺失长度="+sendImgsMore.size()+"总长度="+sendImgs.size());
             sendCounts = 0;
             lastSendOver = "";//清除，否则该方法不再出发。
             //此处不保存时间节点，因为统计用不到
