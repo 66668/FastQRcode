@@ -424,7 +424,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         receveSize = Integer.parseInt(positionStr);
         //拿到发送端文件类型
         recvFlePath = pathAndPos.substring(0, (pathAndPos.length() - 7));
-
+        Log.d(TAG, "文件路径=" + recvFlePath);
         //处理是否有缺失文件。
         handler.removeCallbacks(recvTerminalOverTask);
         handler.post(recvTerminalOverTask);
@@ -606,17 +606,18 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                     Log.d(TAG, "文件路径为null");
                     Log.d(RECV_TAG, "文件路径为null");
                     return null;
+                } else {
+                    //拼接数据
+                    receiveContentDatas = new ArrayList<>();
+                    String data = new String();
+                    //提取map数据
+                    for (int i = 0; i < receveSize; i++) {
+                        String str = receveContentMap.get(i);
+                        data += receveContentMap.get(i);
+                        receiveContentDatas.add(str);
+                    }
+                    return IOUtils.StringToFile(data, recvFlePath);
                 }
-                //拼接数据
-                receiveContentDatas = new ArrayList<>();
-                String data = new String();
-                //提取map数据
-                for (int i = 0; i < receveSize; i++) {
-                    String str = receveContentMap.get(i);
-                    data += receveContentMap.get(i);
-                    receiveContentDatas.add(str);
-                }
-                return IOUtils.StringToFile(data, recvFlePath);
             }
 
             @Override
