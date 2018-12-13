@@ -219,7 +219,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
 
 
     /**
-     * 添加意外中断监听（最好在最小方法内监听）
+     * 添加lastText监听
      * <p>
      * 慎重使用此方法，加入该方法，新能会下降
      * 禁止在高频率下使用
