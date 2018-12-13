@@ -46,7 +46,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private static final String SCAN_TAG = "scan";
     private static final String QR_TAG = "qr_sjy";
     private static final String TAG = "SJY";
-    private static final int FLAG_TIME = 4000;//最后一张图显示时间
+    private static final int FLAG_TIME = 3000;//最后一张图显示时间
 
     //===================变量=====================
     //控件
