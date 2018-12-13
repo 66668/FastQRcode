@@ -602,6 +602,11 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         new AsyncTask<Void, Void, String>() {
             @Override
             protected String doInBackground(Void... voids) {
+                if (recvFlePath == null || TextUtils.isEmpty(recvFlePath)) {
+                    Log.d(TAG, "文件路径为null");
+                    Log.d(RECV_TAG, "文件路径为null");
+                    return null;
+                }
                 //拼接数据
                 receiveContentDatas = new ArrayList<>();
                 String data = new String();
@@ -824,7 +829,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         //
         //初始化
         timeoutCount = 0;
-        showRecvBitmap(send_init, FLAG_TIME*2);//不使用showSendBitmap
+        showRecvBitmap(send_init, FLAG_TIME * 2);//不使用showSendBitmap
         //触发异步
         handler.removeCallbacks(initSendConnectTask);
         handler.post(initSendConnectTask);
