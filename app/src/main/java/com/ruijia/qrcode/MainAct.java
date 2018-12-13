@@ -360,7 +360,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             //初始化接收端数据
             clearRecvParams();
             //发送信息，通知发送端，可以发送数据了
-            showRecvBitmap(recv_init, 2000);
+            showRecvBitmap(recv_init, 4000);
             //该参数需要在适当位置清空，否则出问题。
             recv_lastStr = result;
 
@@ -823,7 +823,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         //
         //初始化
         timeoutCount = 0;
-        showRecvBitmap(send_init);
+        showRecvBitmap(send_init,4000);
         //触发异步
         handler.removeCallbacks(initSendConnectTask);
         handler.post(initSendConnectTask);
