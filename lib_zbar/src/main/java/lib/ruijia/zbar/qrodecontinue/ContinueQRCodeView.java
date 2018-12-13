@@ -26,7 +26,7 @@ public abstract class ContinueQRCodeView extends RelativeLayout implements Camer
      * 识别的最小延时，避免相机还未初始化完成
      */
     public static final int SPOT_MIN_DELAY = 40;//100
-    public static final String TAG = "camera";
+    public static final String TAG = "qrCamera";
     protected Camera mCamera;
     protected ContinueCameraPreview mCameraPreview;
     protected ContinueScanBoxView mScanBoxView;//扫描框
