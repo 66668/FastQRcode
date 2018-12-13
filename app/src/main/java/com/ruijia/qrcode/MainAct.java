@@ -916,7 +916,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             SendMoreCount++;
 
             removeConnectListener();//发送耗时，需要解除监听
-            Log.d(SEND_TAG, " 二次+发送");
+            Log.d(SEND_TAG, " 二次+发送：缺失长度="+sendImgsMore.size()+"总长度="+sendImgs.size());
             sendCounts = 0;
             lastSendOver = "";//清除，否则该方法不再出发。
             //此处不保存时间节点，因为统计用不到
