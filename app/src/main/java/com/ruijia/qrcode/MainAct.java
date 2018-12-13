@@ -945,7 +945,10 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                                             @Override
                                             public void run() {
                                                 showSendBitmap(sendOver_Contnet + sendFlePath + sizeStr);
-                                                timer.cancel();
+                                                if (timer != null) {
+                                                    timer.cancel();
+                                                    timer = null;
+                                                }
                                                 //TODO 是否清除本次参数
 
                                             }
@@ -971,7 +974,10 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                                 @Override
                                 public void run() {
                                     showSendBitmap(sendOver_Contnet + sendFlePath + sizeStr);
-                                    timer.cancel();
+                                    if (timer != null) {
+                                        timer.cancel();
+                                        timer = null;
+                                    }
                                     //TODO 是否清除本次参数
 
                                 }
