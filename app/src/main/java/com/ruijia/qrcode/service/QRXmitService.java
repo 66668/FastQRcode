@@ -354,25 +354,25 @@ public class QRXmitService extends Service {
                     serviceStartAct();
 
                     //转qrbitmap 方式1
-                      createQrBitmap();
+//                      createQrBitmap();
 
 //                    方式2:
-//                    try {
-//                        if (size < 50) {//150KB
-//                            createQrBitmap2(newDatas, 1);
-//                        } else if (size < 100) {//300KB
-//                            createQrBitmap2(newDatas, 2);
-//                        } else if (size < 500) {//1.5M左右
-//                            createQrBitmap2(newDatas, 3);
-//                        } else {//大于1.5M
-//                            createQrBitmap2(newDatas, 4);
-//                        }
-//                        //测试ArrayList的非线程安全
-//                        Log.d("SJY", "原数据大小=" + newDatas.size() + "结果大小=" + maps.size());
-//                    } catch (Exception e) {
-//                        e.printStackTrace();
-//                        Log.e("SJY", "createQrBitmap异常：" + e.toString());
-//                    }
+                    try {
+                        if (size < 50) {//150KB
+                            createQrBitmap2(newDatas, 1);
+                        } else if (size < 100) {//300KB
+                            createQrBitmap2(newDatas, 1);
+                        } else if (size < 500) {//1.5M左右
+                            createQrBitmap2(newDatas, 1);
+                        } else {//大于1.5M
+                            createQrBitmap2(newDatas, 1);
+                        }
+                        //测试ArrayList的非线程安全
+                        Log.d("SJY", "原数据大小=" + newDatas.size() + "结果大小=" + maps.size());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        Log.e("SJY", "createQrBitmap异常：" + e.toString());
+                    }
                 }
 
             }
@@ -397,7 +397,7 @@ public class QRXmitService extends Service {
                 //sendDatas 转qrbitmap
                 for (int i = 0; i < size; i++) {
                     long start = System.currentTimeMillis();
-                    Bitmap bitmap = CodeUtils.createByMultiFormatWriter(newDatas.get(i), 200);
+                    Bitmap bitmap = CodeUtils.createByMultiFormatWriter(newDatas.get(i), 400);
                     sendImgs.add(bitmap);
                     //回调客户端
                     long end = System.currentTimeMillis() - start;
