@@ -46,7 +46,8 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private static final String SCAN_TAG = "scan";
     private static final String QR_TAG = "qr_sjy";
     private static final String TAG = "SJY";
-    private static final int FLAG_TIME = 3000;//最后一张图显示时间
+    private static final int SEND_FLAG_TIME = 3000;//最后一张图显示时间
+    private static final int RECV_FLAG_TIME = 5000;//最后一张图显示时间
 
     //===================变量=====================
     //控件
@@ -360,7 +361,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             //初始化接收端数据
             clearRecvParams();
             //发送信息，通知发送端，可以发送数据了
-            showRecvBitmap(recv_init, FLAG_TIME * 2);
+            showRecvBitmap(recv_init, RECV_FLAG_TIME);
             //该参数需要在适当位置清空，否则出问题。
             recv_lastStr = result;
 
@@ -549,9 +550,9 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                             Log.d(QR_TAG, "接收端：数据没有缺失");
                             //发送结束标记，结束标记为：QrCodeContentReceiveOver
                             if (isSave) {
-                                showRecvBitmap(receiveOver_Content + SUCCESS, FLAG_TIME);
+                                showRecvBitmap(receiveOver_Content + SUCCESS, RECV_FLAG_TIME);
                             } else {
-                                showRecvBitmap(receiveOver_Content + FAILED, FLAG_TIME);
+                                showRecvBitmap(receiveOver_Content + FAILED, RECV_FLAG_TIME);
                             }
 
                             if (timer != null) {
@@ -572,7 +573,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                                 Log.e(TAG, "error=" + e.toString());
 
                                 //发送结束标记，结束标记为：QrCodeContentReceiveOver
-                                showRecvBitmap(receiveOver_Content, FLAG_TIME);
+                                showRecvBitmap(receiveOver_Content, RECV_FLAG_TIME);
                                 if (timer != null) {
                                     timer.cancel();
                                     timer = null;
@@ -580,7 +581,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                             }
                         } else {
                             //发送结束标记，结束标记为：QrCodeContentReceiveOver
-                            showRecvBitmap(receiveOver_Content, FLAG_TIME);
+                            showRecvBitmap(receiveOver_Content, RECV_FLAG_TIME);
                             if (timer != null) {
                                 timer.cancel();
                                 timer = null;
@@ -825,7 +826,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         //
         //初始化
         timeoutCount = 0;
-        showRecvBitmap(send_init, FLAG_TIME * 2);//不使用showSendBitmap
+        showRecvBitmap(send_init, RECV_FLAG_TIME);//不使用showSendBitmap
         //触发异步
         handler.removeCallbacks(initSendConnectTask);
         handler.post(initSendConnectTask);
@@ -877,7 +878,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                                 final String sizeStr = ConvertUtils.int2String(sendSize);
 
                                 //数据发送结束，发送数据配置信息：文件路径+图片尺寸
-                                showSendBitmap(sendOver_Contnet + sendFlePath + sizeStr, FLAG_TIME);
+                                showSendBitmap(sendOver_Contnet + sendFlePath + sizeStr, SEND_FLAG_TIME);
                                 //结束倒计时
                                 if (timer != null) {
                                     timer.cancel();
@@ -948,7 +949,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                                             @Override
                                             public void run() {
 
-                                                showSendBitmap(sendOver_Contnet + sendFlePath + sizeStr, FLAG_TIME);
+                                                showSendBitmap(sendOver_Contnet + sendFlePath + sizeStr, SEND_FLAG_TIME);
                                                 if (timer != null) {
                                                     timer.cancel();
                                                     timer = null;
@@ -1406,7 +1407,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                     }
                 });
             }
-        }, 0, FLAG_TIME);
+        }, 0, RECV_FLAG_TIME);
     }
 
 
