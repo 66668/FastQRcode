@@ -203,6 +203,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         } else if (flagStr.contains("rcv")) {
             //发送端
             updateConnectListener();
+            Log.d(TAG, resultStr);
             SndTerminalScan(flagStr, endFlag, result);
         }
 
@@ -737,22 +738,15 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                 sendBackList.add(i);
             }
         } else {
-            //TODO 异步导致拿不到线程数据
-            //扔到handler的异步中处理
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    sendBackList = new ArrayList<>();
-                    vibrate();  //震动
-                    //数据转成list,list保存位置信息
-                    String[] strDatas = recvStr.split("/");
-                    //数据保存在list中
-                    for (int i = 0; i < strDatas.length; i++) {
-                        sendBackList.add(Integer.parseInt(strDatas[i]));
-                    }
-                    Log.d(TAG, "发送端：接收数据处理,返回张数=" + pos + "内容=" + recvStr + "\n取出的长度sendBackList.size()=" + sendBackList.size());
-                }
-            });
+            sendBackList = new ArrayList<>();
+            vibrate();  //震动
+            //数据转成list,list保存位置信息
+            String[] strDatas = recvStr.split("/");
+            //数据保存在list中
+            for (int i = 0; i < strDatas.length; i++) {
+                sendBackList.add(Integer.parseInt(strDatas[i]));
+            }
+            Log.d(TAG, "发送端：接收数据处理,返回张数=" + pos + "内容=" + recvStr + "\n取出的长度sendBackList.size()=" + sendBackList.size());
         }
 
     }
