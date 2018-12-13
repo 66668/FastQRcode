@@ -698,7 +698,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         public void run() {
             if (timeoutCount < TIMEOUT) {
                 timeoutCount++;
-                handler.postDelayed(this, 1000);
+                handler.postDelayed(this, 950);
             } else {//连接超时
                 //清除图片
                 img_result.setImageBitmap(null);
