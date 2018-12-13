@@ -375,6 +375,11 @@ public abstract class ContinueQRCodeView extends RelativeLayout implements Camer
                 //持续识别
                 if (mCamera != null) {
                     mCamera.setOneShotPreviewCallback(ContinueQRCodeView.this);
+                    mCamera.autoFocus(new Camera.AutoFocusCallback() {
+                        public void onAutoFocus(boolean success, Camera camera) {
+                            startContinuousAutoFocus();
+                        }
+                    });
                 }
             } catch (Exception e) {
                 e.printStackTrace();
