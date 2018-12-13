@@ -145,8 +145,6 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         //结果相同不处理
         if (TextUtils.isEmpty(resultStr) || resultStr.length() < 14 || resultStr.equals(lastText)) {
             Log.d(SCAN_TAG, "重复扫描");
-            //需加倒计时，避免接收端死机不接受反复发送的数据
-            updateLastTextListener();
             return;
         }
         long startTime = System.currentTimeMillis();
@@ -205,9 +203,10 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             //发送端
             updateConnectListener();
             SndTerminalScan(flagStr, endFlag, result);
-        } else {
-            //未识别的错误数据;
         }
+
+        //需加倒计时，避免接收端死机不接受反复发送的数据
+        updateLastTextListener();
     }
 
     //QRCodeView.Delegate
@@ -242,6 +241,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             } else {
                 handler.removeCallbacks(this);
                 //超时清空 lasttext
+                Log.d(SCAN_TAG, "清空lastText");
                 lastText = "";
             }
         }
@@ -717,7 +717,6 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
      * 数据格式：rcv1234567+内容+RJQR
      */
     private void SndTerminalScan(String headTags, final String endTags, final String recvStr) {
-
         String[] flagArray = headTags.split("v");
         //继续排除乱码
         if ((flagArray.length != 2) || (!endTags.equals(endTag))) {
