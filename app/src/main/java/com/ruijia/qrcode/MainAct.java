@@ -91,7 +91,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     public String sendFlePath;//发送端 文件路径
     public long fileSize = 0;//文件 字符流大小
     //
-    private List<Integer> sendBackList = new ArrayList<>();//发送端 返回缺失数据
+    private List<Integer> sendBackList = new ArrayList<>();//发送端 返回缺失数据,依据
     private List<Bitmap> sendImgsMore = new ArrayList<>();//缺失的数据； Bitmap样式
 
     private int sendSize = 0;//发送端 文件路径
@@ -303,6 +303,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         clearInitConnect();
         //
         receveContentMap = new HashMap<>();//接收的数据暂时保存到map中，最终保存到receiveDatas
+        Log.d(QR_TAG, "clearRecvParams--清空所有缓存receveContentMap");
         receiveContentDatas = new ArrayList<>();//文件内容存储
         feedBackFlagList = new ArrayList<>();//缺失标记list,用于拼接数据
         feedBackBuffer = new StringBuffer();  //统计结果
@@ -382,14 +383,14 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             return;
         }
         //处理片段位置标记
-        String posStr = startTags.substring(3, 10);
+        final String posStr = startTags.substring(3, 10);
         final int pos = Integer.parseInt(posStr);//位置 "0001234"-->1234
         //扔到handler的异步中处理
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 vibrate();  //震动
-                Log.d(QR_TAG, "接收端保存数据:" + pos);
+                Log.d(QR_TAG, "接收端保存数据:posStr=" + posStr + "--pos=" + pos + "--recvStr.length()=" + recvStr.length());
                 receveContentMap.put(pos, recvStr);//map暂时保存数据
                 //QRXmitService的aidl在发送端，不会在接收端处理
             }
@@ -410,7 +411,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
             //再一次过滤，保证拿到结束标记 只处理一次
             return;
         }
-        Log.d(QR_TAG, "接收端:发送端单次发送完成");
+
         //注意该标记需要清除，否则容易出问题，清除时间在：接收端发送二维码处
         lastRecvOver = resultStr;//需清除
 
@@ -421,7 +422,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         receveSize = Integer.parseInt(positionStr);
         //拿到发送端文件类型
         recvFlePath = pathAndPos.substring(0, (pathAndPos.length() - 7));
-        Log.d(TAG, "文件路径=" + recvFlePath);
+        Log.d(QR_TAG, "接收端:发送端单次发送完成，\n 拿到recvFlePath=" + recvFlePath + "--receveSize=" + receveSize);
         //处理是否有缺失文件。
         handler.removeCallbacks(recvTerminalOverTask);
         handler.post(recvTerminalOverTask);
@@ -1037,7 +1038,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         sendImgs = new ArrayList<>();
         //
         img_result.setImageBitmap(null);
-        img_result.setBackground(ContextCompat.getDrawable(this,R.drawable.ic_launcher_background));
+        img_result.setBackground(ContextCompat.getDrawable(this, R.drawable.ic_launcher_background));
     }
 
     /**
