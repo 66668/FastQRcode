@@ -50,9 +50,9 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private static final int RECV_FLAG_TIME = 5000;//最后一张图显示时间
     //生成二维码使用
     private static int size_800 = 800;//最大屏幕尺寸，内容500+
-    private static int size_600 = 600;//内容在100～500范围
-    private static int size_500 = 500;//内容在60～100范围
-    private static int size_400 = 400;//内容在0～60范围
+    private static int size_600 = 750;//内容在100～500范围
+    private static int size_500 = 700;//内容在60～100范围
+    private static int size_400 = 600;//内容在0～60范围
 
     //===================变量=====================
     //控件
