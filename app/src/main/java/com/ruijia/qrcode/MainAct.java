@@ -62,7 +62,6 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private ZBarContinueView mZBarView; //zbar
     private ImageView img_result;
     RelativeLayout ly_img;
-    boolean isTrans = false;
 
     private Handler handler;
     //==============通用标记==============
@@ -1082,19 +1081,13 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         img_result = (ImageView) findViewById(R.id.barcodePreview);
         //辅助设置，方便设置设备二维码对焦问题
         ly_img = (RelativeLayout) findViewById(R.id.ly_img);
-        ly_img.setOnClickListener(new View.OnClickListener() {
+        ly_img.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
-            public void onClick(View v) {
-                if (!isTrans) {
-                    ly_img.setBackground(ContextCompat.getDrawable(MainAct.this, R.color.trans));
-                    isTrans = true;
-                } else {
-                    ly_img.setBackground(ContextCompat.getDrawable(MainAct.this, R.color.white));
-                    isTrans = false;
-                }
+            public boolean onLongClick(View v) {
+                ly_img.setVisibility(View.INVISIBLE);
+                return false;
             }
         });
-      
 
         handler = new Handler();
         //获取缓存的时间间隔
