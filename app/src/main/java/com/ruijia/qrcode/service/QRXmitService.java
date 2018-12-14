@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class QRXmitService extends Service {
     public static final String TAG = "SJY";
+    private static final int qrSize = 800;//该值和屏幕宽度尺寸相关
     //---------------------------变量-------------------------------
     private Handler handler;
 
@@ -49,6 +50,7 @@ public class QRXmitService extends Service {
     private List<Bitmap> maps = new ArrayList<>();
     private int size = 0;//当前文件的list长度
     private long fileSize = 0;//文件大小
+
 
     /**
      * 客户端开启连接后，自动执行
@@ -397,7 +399,7 @@ public class QRXmitService extends Service {
                 //sendDatas 转qrbitmap
                 for (int i = 0; i < size; i++) {
                     long start = System.currentTimeMillis();
-                    Bitmap bitmap = CodeUtils.createByMultiFormatWriter(newDatas.get(i), 400);
+                    Bitmap bitmap = CodeUtils.createByMultiFormatWriter(newDatas.get(i), qrSize);
                     sendImgs.add(bitmap);
                     //回调客户端
                     long end = System.currentTimeMillis() - start;
@@ -456,7 +458,7 @@ public class QRXmitService extends Service {
                     long startTime = System.currentTimeMillis();//统计
                     for (int j = 0; j < subList.size(); j++) {
                         long start = System.currentTimeMillis();//统计
-                        Bitmap bitmap = CodeUtils.createByMultiFormatWriter(subList.get(j), 400);
+                        Bitmap bitmap = CodeUtils.createByMultiFormatWriter(subList.get(j), qrSize);
                         unitLists.add(bitmap);
                         //回调客户端
                         long end = System.currentTimeMillis() - start;

@@ -24,7 +24,7 @@ public class CodeUtils {
      * MultiFormatWriter 类
      *
      * @param content
-     * @param size
+     * @param size size很重要，对于连续识别功能，size关乎图片的清晰度
      * @return
      */
     public static Bitmap createByMultiFormatWriter(String content, int size) {

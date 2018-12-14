@@ -36,5 +36,8 @@ dependencies {
     //zbar 只用于识别
     implementation project(':lib_zbar')
     //zxing 只用于生成二维码使用
-    implementation 'com.google.zxing:core:3.3.3'
+    //方式1：使用在线库
+    //    implementation 'com.google.zxing:core:3.3.3'
+    //方式2：使用本地module库，修改了白边设置
+    implementation project(':lib_zxing_core')
 }
