@@ -53,7 +53,7 @@
             android:layout_width="match_parent"
             android:layout_height="1000px"
             android:layout_centerInParent="true"
-            android:background="#4dFFFFFF">
+            android:background="#F0FFFFFF">
             <!--识别结果-->
             <ImageView
                 android:id="@+id/barcodePreview"
