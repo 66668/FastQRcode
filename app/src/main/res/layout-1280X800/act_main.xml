@@ -13,10 +13,10 @@
         android:layout_height="match_parent">
         <!--相机预览+扫描框-->
         <lib.ruijia.zbar.ZBarContinueView
-            android:visibility="visible"
             android:id="@+id/zbarview"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:visibility="visible"
             app:qrcv_animTime="1000"
             app:qrcv_barCodeTipText="将条码放入框内，即可自动扫描"
             app:qrcv_barcodeRectHeight="140dp"
@@ -46,6 +46,7 @@
 
     <!--放二维码-->
     <RelativeLayout
+        android:id="@+id/ly_img"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 

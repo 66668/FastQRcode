@@ -16,8 +16,10 @@ import android.os.Vibrator;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.Space;
 
 import com.ruijia.qrcode.listener.OnServiceAndActListener;
@@ -58,6 +60,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     //控件
     private ZBarContinueView mZBarView; //zbar
     private ImageView img_result;
+    RelativeLayout ly_img;
 
     private Handler handler;
     //==============通用标记==============
@@ -1075,6 +1078,19 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         mZBarView.setDelegate(this);
         //
         img_result = (ImageView) findViewById(R.id.barcodePreview);
+        //辅助设置，方便设置设备二维码对焦问题
+        ly_img = (RelativeLayout) findViewById(R.id.ly_img);
+        ly_img.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                if (ly_img.getVisibility() == View.VISIBLE) {
+                    ly_img.setVisibility(View.INVISIBLE);
+                } else {
+                    ly_img.setVisibility(View.VISIBLE);
+                }
+                return false;
+            }
+        });
 
         handler = new Handler();
         //获取缓存的时间间隔
