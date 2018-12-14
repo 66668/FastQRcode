@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.hardware.Camera;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -61,6 +62,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private ZBarContinueView mZBarView; //zbar
     private ImageView img_result;
     RelativeLayout ly_img;
+    boolean isTrans = false;
 
     private Handler handler;
     //==============通用标记==============
@@ -1080,17 +1082,19 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         img_result = (ImageView) findViewById(R.id.barcodePreview);
         //辅助设置，方便设置设备二维码对焦问题
         ly_img = (RelativeLayout) findViewById(R.id.ly_img);
-        ly_img.setOnLongClickListener(new View.OnLongClickListener() {
+        ly_img.setOnClickListener(new View.OnClickListener() {
             @Override
-            public boolean onLongClick(View v) {
-                if (ly_img.getVisibility() == View.VISIBLE) {
-                    ly_img.setVisibility(View.INVISIBLE);
+            public void onClick(View v) {
+                if (!isTrans) {
+                    ly_img.setBackground(ContextCompat.getDrawable(MainAct.this, R.color.trans));
+                    isTrans = true;
                 } else {
-                    ly_img.setVisibility(View.VISIBLE);
+                    ly_img.setBackground(ContextCompat.getDrawable(MainAct.this, R.color.white));
+                    isTrans = false;
                 }
-                return false;
             }
         });
+      
 
         handler = new Handler();
         //获取缓存的时间间隔
