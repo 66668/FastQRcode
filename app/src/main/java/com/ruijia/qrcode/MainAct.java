@@ -48,13 +48,17 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private static final String TAG = "SJY";
     private static final int SEND_FLAG_TIME = 3000;//最后一张图显示时间
     private static final int RECV_FLAG_TIME = 5000;//最后一张图显示时间
+    //生成二维码使用
+    private static int size_800 = 800;//最大屏幕尺寸，内容500+
+    private static int size_600 = 600;//内容在100～500范围
+    private static int size_500 = 500;//内容在60～100范围
+    private static int size_400 = 400;//内容在0～60范围
 
     //===================变量=====================
     //控件
     private ZBarContinueView mZBarView; //zbar
     private ImageView img_result;
-    //生成二维码使用
-    private int size = 400;//200就够了，再大也没用
+
     private Handler handler;
     //==============通用标记==============
     private long PSOTDELAY_TIME_SEND = 150;//默认 发送间隔时间
@@ -1072,8 +1076,6 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         //
         img_result = (ImageView) findViewById(R.id.barcodePreview);
 
-        //设置宽高
-        size = 400;
         handler = new Handler();
         //获取缓存的时间间隔
         PSOTDELAY_TIME_SEND = SPUtil.getInt(Constants.TIME_INTERVAL, Constants.DEFAULT_TIME);
@@ -1284,7 +1286,14 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         new AsyncTask<Void, Void, Bitmap>() {
             @Override
             protected Bitmap doInBackground(Void... voids) {
-                return CodeUtils.createByMultiFormatWriter(content, size);
+                if (content.length() > 500) {
+                    return CodeUtils.createByMultiFormatWriter(content, size_800);
+                } else if (content.length() > 100) {
+                    return CodeUtils.createByMultiFormatWriter(content, size_600);
+                } else if (content.length() > 60) {
+                    return CodeUtils.createByMultiFormatWriter(content, size_500);
+                } else
+                    return CodeUtils.createByMultiFormatWriter(content, size_400);
             }
 
             @Override
@@ -1336,7 +1345,14 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
         new AsyncTask<Void, Void, Bitmap>() {
             @Override
             protected Bitmap doInBackground(Void... voids) {
-                return CodeUtils.createByMultiFormatWriter(content, size);
+                if (content.length() > 500) {
+                    return CodeUtils.createByMultiFormatWriter(content, size_800);
+                } else if (content.length() > 100) {
+                    return CodeUtils.createByMultiFormatWriter(content, size_600);
+                } else if (content.length() > 60) {
+                    return CodeUtils.createByMultiFormatWriter(content, size_500);
+                } else
+                    return CodeUtils.createByMultiFormatWriter(content, size_400);
             }
 
             @Override

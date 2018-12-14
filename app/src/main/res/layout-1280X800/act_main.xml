@@ -46,17 +46,23 @@
 
     <!--放二维码-->
     <RelativeLayout
-        android:background="@android:color/transparent"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <!--识别结果-->
-        <ImageView
-            android:id="@+id/barcodePreview"
-            android:layout_width="800px"
-            android:layout_height="800px"
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="1000px"
             android:layout_centerInParent="true"
-            android:background="#4d000000" />
+            android:background="#4dFFFFFF">
+            <!--识别结果-->
+            <ImageView
+                android:id="@+id/barcodePreview"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true" />
+
+        </RelativeLayout>
+
     </RelativeLayout>
 
 
