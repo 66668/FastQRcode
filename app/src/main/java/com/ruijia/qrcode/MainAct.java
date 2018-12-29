@@ -49,6 +49,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private static final String SCAN_TAG = "scan";
     private static final String QR_TAG = "qr_sjy";
     private static final String TAG = "SJY";
+    //// TODO: 2018/12/29
     private static final int SEND_FLAG_TIME = 3000;//最后一张图显示时间
     private static final int RECV_FLAG_TIME = 5000;//最后一张图显示时间
     //生成二维码使用
@@ -70,9 +71,10 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private String sendOver_Contnet = "QrcodeContentSendOver";//发送端 所有数据一次发送完成，发送结束标记
     private String receiveOver_Content = "QrCodeContentReceiveOver";//接收端 完全收到数据，发送结束标记
     private String recv_loss_all = "QrCodeReceiveLossAll";//接收端 丢失全部数据
-    private String SUCCESS = "Success";//传输成功结束标记，和sendOver_Contnet和receiveOver_Content拼接使用
-    private String FAILED = "Failed";//传输失败结束标记，和sendOver_Contnet和receiveOver_Content拼接使用
-    private String endTag = "RJQR";
+    //
+    private String SUCCESS = "Success";//传输成功结束标记，和sendOver_Contnet和receiveOver_Content拼接使用 不要动
+    private String FAILED = "Failed";//传输失败结束标记，和sendOver_Contnet和receiveOver_Content拼接使用 不要动
+    private String endTag = "RJQR";//不要动
     private String lastText;//
     private String lastRecvOver = "";//接收端使用的标记
     private String lastSendOver = "";//发送端使用的标记
