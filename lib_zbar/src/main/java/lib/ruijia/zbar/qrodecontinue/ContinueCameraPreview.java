@@ -146,6 +146,11 @@ public class ContinueCameraPreview extends SurfaceView implements SurfaceHolder.
         handleFocusMetering(scanRect.centerX(), scanRect.centerY(), scanRect.width(), scanRect.height());
     }
 
+    public void setMyFoucus() {
+        //点击屏幕触发自动对焦
+        handleFocusMetering(540, 960, 120, 120);
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (!isPreviewing()) {

@@ -10,13 +10,13 @@ public class Constants {
      * 默认150
      */
     public static final String TIME_INTERVAL = "time_interval";
-    public static final int DEFAULT_TIME = 350;
+    public static final int DEFAULT_TIME = 300;
 
     /**
      * 最大文件大小 默认5M
      */
     public static final String FILE_SIZE = "fileSize";
-    public static final int DEFAULT_SIZE = 5;
+    public static final int DEFAULT_SIZE = 2;
 
     public static final String CON_TIME_OUT = "connect_timeout";
     public static final int TIMEOUT = 15;
@@ -24,11 +24,12 @@ public class Constants {
     /**
      * 字符流 截取长度
      * <p>
-     * zxing core 3.3.3 最大的传输容量2954,17长度做标记头和标记尾。2952-17=2935
+     * zxing core 3.3.3 最大的传输容量2952,17长度做标记头和标记尾。2952-17=2935
      * <p>
-     * 最强性能长度 2938
+     * 最强性能长度 2935
      */
-    public static final int qrSize = 2000;//
+    public static final int qrSize = 2930;//
+    public static final int qrBitmapSize = 200;//
 
 
     /**

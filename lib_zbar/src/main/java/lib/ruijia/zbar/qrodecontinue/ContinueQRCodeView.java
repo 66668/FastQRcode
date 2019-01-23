@@ -70,6 +70,10 @@ public abstract class ContinueQRCodeView extends RelativeLayout implements Camer
 
     protected abstract void setupReader();
 
+    public void setMyFoucus() {
+        mCameraPreview.setMyFoucus();
+    }
+
     /**
      * 设置扫描二维码的代理
      *
@@ -123,12 +127,12 @@ public abstract class ContinueQRCodeView extends RelativeLayout implements Camer
         for (int cameraId = 0; cameraId < Camera.getNumberOfCameras(); cameraId++) {
             Camera.getCameraInfo(cameraId, cameraInfo);
             //TODO 方式1：zbar用于正常手机
-//            if (cameraInfo.facing == cameraFacing) {
-//                startCameraById(cameraId);
-//                break;
-//            }
+            if (cameraInfo.facing == cameraFacing) {
+                startCameraById(cameraId);
+                break;
+            }
             //TODO 方式2： zbar用于特殊设备
-            startCameraById(cameraId);
+//            startCameraById(cameraId);
         }
     }
 
@@ -342,7 +346,7 @@ public abstract class ContinueQRCodeView extends RelativeLayout implements Camer
         //TODO log测试
         Log.d(TAG, "两次 onPreviewFrame 时间间隔：" + (System.currentTimeMillis() - sLastPreviewFrameTime));
         sLastPreviewFrameTime = System.currentTimeMillis();
-        if(mCamera!=null){
+        if (mCamera != null) {
             //让连续识别的相机抖动聚焦起来
             startContinuousAutoFocus();
         }
@@ -419,7 +423,6 @@ public abstract class ContinueQRCodeView extends RelativeLayout implements Camer
         public void run() {
             if (mCamera != null) {
                 try {
-
                     mCamera.setOneShotPreviewCallback(ContinueQRCodeView.this);
                 } catch (Exception e) {
                     e.printStackTrace();

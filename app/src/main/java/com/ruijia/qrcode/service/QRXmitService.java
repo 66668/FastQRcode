@@ -359,22 +359,22 @@ public class QRXmitService extends Service {
 //                      createQrBitmap();
 
 //                    方式2:
-                    try {
-                        if (size < 50) {//150KB
-                            createQrBitmap2(newDatas, 1);
-                        } else if (size < 100) {//300KB
-                            createQrBitmap2(newDatas, 1);
-                        } else if (size < 500) {//1.5M左右
-                            createQrBitmap2(newDatas, 1);
-                        } else {//大于1.5M
-                            createQrBitmap2(newDatas, 1);
-                        }
-                        //测试ArrayList的非线程安全
-                        Log.d("SJY", "原数据大小=" + newDatas.size() + "结果大小=" + maps.size());
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        Log.e("SJY", "createQrBitmap异常：" + e.toString());
-                    }
+//                    try {
+//                        if (size < 50) {//150KB
+//                            createQrBitmap2(newDatas, 1);
+//                        } else if (size < 100) {//300KB
+//                            createQrBitmap2(newDatas, 1);
+//                        } else if (size < 500) {//1.5M左右
+//                            createQrBitmap2(newDatas, 1);
+//                        } else {//大于1.5M
+//                            createQrBitmap2(newDatas, 1);
+//                        }
+//                        //测试ArrayList的非线程安全
+//                        Log.d("SJY", "原数据大小=" + newDatas.size() + "结果大小=" + maps.size());
+//                    } catch (Exception e) {
+//                        e.printStackTrace();
+//                        Log.e("SJY", "createQrBitmap异常：" + e.toString());
+//                    }
                 }
 
             }

@@ -48,18 +48,19 @@
     <RelativeLayout
         android:id="@+id/ly_img"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:background="@android:color/transparent">
 
         <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="1000px"
+            android:layout_height="1200px"
             android:layout_centerInParent="true"
             android:background="#FFFFFF">
             <!--识别结果-->
             <ImageView
                 android:id="@+id/barcodePreview"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="1000px"
+                android:layout_height="1000px"
                 android:layout_centerInParent="true" />
 
         </RelativeLayout>
