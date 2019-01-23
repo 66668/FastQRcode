@@ -10,13 +10,18 @@ public class Constants {
      * 默认150
      */
     public static final String TIME_INTERVAL = "time_interval";
-    public static final int DEFAULT_TIME = 300;
+
+    public static final int DEFAULT_TIME = 200;
 
     /**
      * 最大文件大小 默认5M
      */
     public static final String FILE_SIZE = "fileSize";
     public static final int DEFAULT_SIZE = 2;
+    /**
+     * 缺失端拼接最大长度
+     */
+    public static final int LOST_LENGTH = 2600;
 
     public static final String CON_TIME_OUT = "connect_timeout";
     public static final int TIMEOUT = 15;
