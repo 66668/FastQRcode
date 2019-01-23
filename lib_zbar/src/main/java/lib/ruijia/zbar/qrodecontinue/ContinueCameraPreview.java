@@ -166,7 +166,7 @@ public class ContinueCameraPreview extends SurfaceView implements SurfaceHolder.
                 centerY = temp;
             }
             int focusSize = ContinueBGAQRCodeUtil.dp2px(getContext(), 120);
-            
+
             //点击屏幕触发自动对焦
             handleFocusMetering(centerX, centerY, focusSize, focusSize);
         }
