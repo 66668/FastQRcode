@@ -55,13 +55,6 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     private static final int SEND_FLAG_TIME = 2500;//最后一张图显示时间
     private static final int RECV_FLAG_TIME = 5000;//最后一张图显示时间
     // ImageView动态尺寸
-    private int iv_size = 1000;
-    private static int iv_size_1000 = 1000;//最大屏幕尺寸，内容500+
-    private static int iv_size_800 = 800;//最大屏幕尺寸，内容500+
-    private static int iv_size_600 = 800;//内容在100～500范围
-    private static int iv_size_500 = 400;//内容在60～100范围
-    private static int iv_size_400 = 400;//内容在0～60范围
-
     //===================变量=====================
     //控件
     private ZBarContinueView mZBarView; //zbar
@@ -147,7 +140,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                 mZBarView.setMyFoucus();
                 if (handler != null) {
                     handler.removeCallbacks(this);
-                    handler.postDelayed(this, 1000);
+                    handler.postDelayed(this, 1100);
                 }
             }
 
@@ -802,7 +795,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                         if (sendContentMore.size() == 1) {
                             //long startCreateQrCodeTime = System.currentTimeMillis();
                             Bitmap bitmap = CodeUtils.createByMultiFormatWriter(sendContentMore.get(0), Constants.qrBitmapSize);
-                            Log.d(TAG,  " 生成单个二维码" );
+                            Log.d(TAG, " 生成单个二维码");
                             if (bitmap == null) {
                                 SendMoreCount = 0;
                                 return;//二维码异常，返回
@@ -810,7 +803,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                             missQrBitmapDeque.addFirst(bitmap);
                             startSendMore();//发送缺失二维码
                             //死循环
-                        } else if(sendContentMore.size()>1)  {
+                        } else if (sendContentMore.size() > 1) {
                             missFragmentPos = 0;//获取丢失帧 初始化missFragmentPos 处理标志
                             startCreateMissQrBitmaps();
                             startSendMore();
@@ -1076,7 +1069,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                                 Log.d(TAG, "miss fragment pos = " + sendCounts);
 
                                 //TODO 容易bug死循环  // 等待生产者数据
-                                if (missQrBitmapDeque.size() <= 0 && sendCounts<sendContentMore.size()) {
+                                if (missQrBitmapDeque.size() <= 0 && sendCounts < sendContentMore.size()) {
                                     //missFragmentPos = 0;
                                     startCreateMissQrBitmaps();//发送过程中 调用生产者生产
                                     if (SendMoreCount < 200) {
@@ -1461,21 +1454,21 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
     //
     private void startCreateMissQrBitmaps() {
         Log.d(TAG, "startCreateMissQrBitmaps: 111111");
-        Log.d(TAG, "isCreateMissQrThreadRuning: "+isCreateMissQrThreadRuning);
+        Log.d(TAG, "isCreateMissQrThreadRuning: " + isCreateMissQrThreadRuning);
         if (!isCreateMissQrThreadRuning) {
             new Thread() {
                 @Override
                 public void run() {
                     //super.run();
                     //有数据未处理&& 缓存数据小于设定数量
-                    Log.d(TAG, "run: "+!isExitMissString2QRThread+""+(missFragmentPos < sendContentMore.size())+""+(missQrBitmapDeque.size() < MAX_QR_COUNT));
+                    Log.d(TAG, "run: " + !isExitMissString2QRThread + "" + (missFragmentPos < sendContentMore.size()) + "" + (missQrBitmapDeque.size() < MAX_QR_COUNT));
                     while (!isExitMissString2QRThread && missFragmentPos < sendContentMore.size()
                             && missQrBitmapDeque.size() < MAX_QR_COUNT) {
                         //开始处理二维码
                         isCreateMissQrThreadRuning = true;
                         //Log.d(TAG, "开始后台进程生成二维码图片");
                         long startCreateQrCodeTime = System.currentTimeMillis();
-                        Log.d(TAG, "run: 缺失长度："+sendContentMore.get(missFragmentPos).length());
+                        Log.d(TAG, "run: 缺失长度：" + sendContentMore.get(missFragmentPos).length());
                         Bitmap bitmap = CodeUtils.createByMultiFormatWriter(sendContentMore.get(missFragmentPos), Constants.qrBitmapSize);
                         Log.d(TAG, missFragmentPos + " 二维码生成时间 " + (System.currentTimeMillis() - startCreateQrCodeTime));
                         if (bitmap != null) {
@@ -1487,7 +1480,7 @@ public class MainAct extends BaseAct implements ContinueQRCodeView.Delegate {
                         Log.d(TAG, "next = " + missFragmentPos);
                     }
                     isCreateMissQrThreadRuning = false;
-                    Log.d(TAG, "run: isCreateMissQrThreadRuning = "+isCreateMissQrThreadRuning);
+                    Log.d(TAG, "run: isCreateMissQrThreadRuning = " + isCreateMissQrThreadRuning);
 
 
                 }
